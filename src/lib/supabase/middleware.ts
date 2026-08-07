@@ -9,6 +9,7 @@ import {
 
 /**
  * Menyegarkan sesi Supabase pada setiap request dan menjaga /admin.
+ * Berjalan di edge runtime — lihat catatan di `src/middleware.ts`.
  *
  * Penting: kembalikan objek response yang sama supaya cookie hasil
  * `setAll` ikut terkirim ke browser.

@@ -117,10 +117,15 @@ src/
 │  ├─ cart-store.ts      External store keranjang (localStorage)
 │  ├─ whatsapp.ts        Penyusun pesan & tautan wa.me
 │  └─ site-config.ts     Identitas toko (default)
-└─ proxy.ts              Penyegar sesi + penjaga rute /admin
+└─ middleware.ts         Penyegar sesi + penjaga rute /admin
 ```
 
-> Di Next.js 16 `middleware.ts` berganti nama menjadi `proxy.ts`.
+> **Kenapa masih `middleware.ts`, bukan `proxy.ts`?**
+> Next.js 16 mengganti namanya menjadi `proxy.ts`, tapi `proxy` selalu berjalan di
+> runtime Node.js dan `@opennextjs/cloudflare` belum mendukungnya — `npm run deploy`
+> akan gagal dengan _"Node.js middleware is not currently supported"_. Nama lama
+> dipertahankan agar tetap berjalan di edge runtime. Ganti namanya setelah adapter
+> Cloudflare mendukung Node middleware.
 
 ## Catatan desain
 
