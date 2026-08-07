@@ -1,11 +1,13 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
 
 import { LoginForm } from "@/components/admin/login-form";
+import { isSchemaReady } from "@/lib/data/queries";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
-export default function LoginPage() {
+export default async function LoginPage() {
   const configured = isSupabaseConfigured();
+  const schemaReady = configured ? await isSchemaReady() : false;
 
   return (
     <div className="flex flex-1 items-center justify-center px-5 py-16">
@@ -17,16 +19,12 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {configured ? (
-          <LoginForm />
-        ) : (
-          <div className="space-y-3 rounded-xl border border-dashed p-5 text-sm">
-            <p className="font-medium">Supabase belum dikonfigurasi</p>
-            <p className="leading-relaxed text-muted-foreground">
-              Situs sedang berjalan dengan data contoh. Untuk mengaktifkan CMS:
-            </p>
-            <ol className="list-decimal space-y-1.5 pl-4 leading-relaxed text-muted-foreground">
-              <li>
+        {!configured ? (
+          <SetupNotice
+            title="Supabase belum dikonfigurasi"
+            intro="Situs sedang berjalan dengan data contoh. Untuk mengaktifkan CMS:"
+            steps={[
+              <>
                 Buat proyek di{" "}
                 <a
                   href="https://supabase.com/dashboard"
@@ -36,23 +34,54 @@ export default function LoginPage() {
                 >
                   supabase.com
                 </a>
-              </li>
-              <li>
-                Jalankan isi folder{" "}
-                <code className="font-mono">supabase/v1/</code> secara berurutan
-                di SQL Editor (01 → 04)
-              </li>
-              <li>
-                Salin URL dan anon key ke{" "}
+              </>,
+              <>
+                Jalankan isi <code className="font-mono">supabase/v1/</code> lalu{" "}
+                <code className="font-mono">supabase/v2/</code> di SQL Editor
+              </>,
+              <>
+                Salin URL dan publishable key ke{" "}
                 <code className="font-mono">.env.local</code>
-              </li>
-              <li>
+              </>,
+              <>
                 Buat user di Authentication, lalu daftarkan{" "}
                 <code className="font-mono">user_id</code>-nya ke tabel{" "}
                 <code className="font-mono">admins</code>
-              </li>
-            </ol>
-          </div>
+              </>,
+            ]}
+          />
+        ) : !schemaReady ? (
+          <SetupNotice
+            warning
+            title="Database masih kosong"
+            intro="Kredensial sudah terbaca, tapi tabelnya belum dibuat. Situs publik sementara memakai data contoh. Yang perlu dijalankan di SQL Editor:"
+            steps={[
+              <>
+                <code className="font-mono">supabase/v1/01_schema.sql</code>
+              </>,
+              <>
+                <code className="font-mono">supabase/v1/02_rls.sql</code>
+              </>,
+              <>
+                <code className="font-mono">supabase/v1/03_storage.sql</code>
+              </>,
+              <>
+                <code className="font-mono">supabase/v1/04_seed.sql</code>{" "}
+                <span className="text-muted-foreground">(opsional)</span>
+              </>,
+              <>
+                <code className="font-mono">supabase/v2/01_attributes.sql</code>
+              </>,
+              <>
+                <code className="font-mono">
+                  supabase/v2/02_seed_attributes.sql
+                </code>
+              </>,
+            ]}
+            footer="Setelah itu buat user di Authentication dan daftarkan ke tabel admins — panduannya ada di supabase/README.md."
+          />
+        ) : (
+          <LoginForm />
         )}
 
         <Link
@@ -63,6 +92,51 @@ export default function LoginPage() {
           Kembali ke situs
         </Link>
       </div>
+    </div>
+  );
+}
+
+function SetupNotice({
+  title,
+  intro,
+  steps,
+  footer,
+  warning,
+}: {
+  title: string;
+  intro: string;
+  steps: React.ReactNode[];
+  footer?: string;
+  warning?: boolean;
+}) {
+  return (
+    <div
+      className={
+        warning
+          ? "space-y-3 rounded-xl border border-destructive/30 bg-destructive/5 p-5 text-sm"
+          : "space-y-3 rounded-xl border border-dashed p-5 text-sm"
+      }
+    >
+      <p className="flex items-center gap-2 font-medium">
+        {warning && (
+          <AlertTriangle
+            className="size-4 shrink-0 text-destructive"
+            aria-hidden="true"
+          />
+        )}
+        {title}
+      </p>
+      <p className="leading-relaxed text-muted-foreground">{intro}</p>
+
+      <ol className="list-decimal space-y-1.5 pl-4 leading-relaxed text-muted-foreground">
+        {steps.map((step, index) => (
+          <li key={index}>{step}</li>
+        ))}
+      </ol>
+
+      {footer && (
+        <p className="leading-relaxed text-muted-foreground">{footer}</p>
+      )}
     </div>
   );
 }

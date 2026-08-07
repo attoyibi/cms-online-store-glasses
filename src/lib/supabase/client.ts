@@ -3,7 +3,7 @@
 import { createBrowserClient } from "@supabase/ssr";
 
 import {
-  SUPABASE_ANON_KEY,
+  SUPABASE_KEY,
   SUPABASE_URL,
   isSupabaseConfigured,
 } from "@/lib/supabase/env";
@@ -11,5 +11,5 @@ import {
 /** Client Supabase untuk komponen client. Null bila env belum diisi. */
 export function createClient() {
   if (!isSupabaseConfigured()) return null;
-  return createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  return createBrowserClient(SUPABASE_URL, SUPABASE_KEY);
 }
