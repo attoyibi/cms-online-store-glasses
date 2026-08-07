@@ -2,16 +2,17 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-import { CatalogToolbar } from "@/components/catalog/catalog-toolbar";
 import { CategoryPills } from "@/components/catalog/category-pills";
+import { FilterBar } from "@/components/catalog/filter-bar";
 import { ProductGrid } from "@/components/catalog/product-grid";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  getCatalog,
   getCategories,
   getCategoryBySlug,
-  getProducts,
   type ProductSort,
 } from "@/lib/data/queries";
+import { parseFilters } from "@/lib/filters";
 
 const VALID_SORTS: ProductSort[] = ["terbaru", "termurah", "termahal", "nama"];
 
@@ -51,11 +52,15 @@ export default async function CategoryPage(
   const search = Array.isArray(searchParams.q)
     ? searchParams.q[0]
     : searchParams.q;
-  const sort = parseSort(searchParams.sort);
 
-  const [categories, products] = await Promise.all([
+  const [categories, catalog] = await Promise.all([
     getCategories(),
-    getProducts({ categorySlug: slug, search, sort }),
+    getCatalog({
+      categorySlug: slug,
+      search,
+      sort: parseSort(searchParams.sort),
+      filters: parseFilters(searchParams),
+    }),
   ]);
 
   return (
@@ -72,16 +77,18 @@ export default async function CategoryPage(
       <div className="mt-8 space-y-5">
         <CategoryPills categories={categories} activeSlug={slug} />
 
-        <Suspense fallback={<Skeleton className="h-9 w-full" />}>
-          <CatalogToolbar
+        <Suspense fallback={<Skeleton className="h-40 w-full rounded-xl" />}>
+          <FilterBar
             basePath={`/kategori/${slug}`}
-            total={products.length}
+            facets={catalog.facets}
+            total={catalog.products.length}
+            totalBeforeFilters={catalog.totalBeforeFilters}
           />
         </Suspense>
       </div>
 
       <div className="mt-9">
-        <ProductGrid products={products} />
+        <ProductGrid products={catalog.products} />
       </div>
     </div>
   );

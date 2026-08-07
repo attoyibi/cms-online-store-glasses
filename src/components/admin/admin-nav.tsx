@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, LogOut, Package, Settings, Tags } from "lucide-react";
+import {
+  LayoutDashboard,
+  LogOut,
+  Package,
+  Settings,
+  SlidersHorizontal,
+  Tags,
+} from "lucide-react";
 
 import { signOut } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";
@@ -12,6 +19,7 @@ const links = [
   { href: "/admin", label: "Ringkasan", icon: LayoutDashboard, exact: true },
   { href: "/admin/produk", label: "Produk", icon: Package },
   { href: "/admin/kategori", label: "Kategori", icon: Tags },
+  { href: "/admin/atribut", label: "Atribut Filter", icon: SlidersHorizontal },
   { href: "/admin/pengaturan", label: "Pengaturan", icon: Settings },
 ];
 

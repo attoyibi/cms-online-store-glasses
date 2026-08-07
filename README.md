@@ -19,7 +19,8 @@ lewat halaman `/admin` yang dilindungi login.
 **Untuk pengunjung (tanpa login)**
 
 - Landing page: hero, kategori, best seller, koleksi terbaru, lensa, cara pesan, testimoni, FAQ
-- Katalog dengan pencarian dan pengurutan (state ada di URL, bisa dibagikan)
+- Katalog dengan pencarian, pengurutan, dan filter (state ada di URL, bisa dibagikan)
+- Filter bentuk frame yang visual — ikon kacamata, bukan daftar centang
 - Halaman kategori dan detail produk lengkap dengan spesifikasi
 - Keranjang yang bertahan di `localStorage` dan sinkron antar tab
 - Checkout → menyusun rincian pesanan menjadi pesan WhatsApp
@@ -29,6 +30,7 @@ lewat halaman `/admin` yang dilindungi login.
 - Ringkasan: jumlah produk, kategori, dan daftar stok menipis
 - CRUD produk — termasuk unggah gambar ke Supabase Storage, harga coret, dan spesifikasi bebas
 - CRUD kategori dengan pengaturan urutan tampil
+- Kelola opsi filter (bentuk, material, warna) tanpa perlu menyentuh SQL
 - Pengaturan toko: nama, nomor WhatsApp, alamat, jam buka, dan bar pengumuman
 
 ## Menjalankan secara lokal
@@ -47,8 +49,9 @@ Tanpa kredensial Supabase, situs tetap jalan memakai data contoh di
 ## Menghubungkan Supabase
 
 1. Buat proyek di [supabase.com](https://supabase.com/dashboard).
-2. SQL Editor → jalankan isi `supabase/v1/` berurutan: `01_schema` → `02_rls` →
-   `03_storage` → `04_seed` (yang terakhir opsional, isinya data contoh).
+2. SQL Editor → jalankan isi `supabase/v1/` berurutan (`01_schema` → `02_rls` →
+   `03_storage` → `04_seed`), lalu `supabase/v2/` (`01_attributes` →
+   `02_seed_attributes`). Hanya `04_seed` yang opsional — isinya data contoh.
 3. Salin `.env.example` menjadi `.env.local`, isi `NEXT_PUBLIC_SUPABASE_URL` dan
    `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Project Settings → API).
 4. Authentication → Users → **Add user**, buat akun admin.
@@ -112,7 +115,7 @@ src/
 ├─ components/
 │  ├─ admin/             Form dan navigasi CMS
 │  ├─ cart/              Provider, panel keranjang, form checkout
-│  ├─ catalog/           Toolbar, filter kategori, grid produk
+│  ├─ catalog/           Bar filter, ikon bentuk, grid produk
 │  ├─ layout/            Header, footer, tombol WhatsApp mengambang
 │  ├─ product/           Kartu produk, galeri, tombol tambah
 │  ├─ sections/          Section landing page
@@ -121,14 +124,23 @@ src/
 │  ├─ data/              Query Supabase + data contoh
 │  ├─ supabase/          Client browser/server, guard admin, middleware
 │  ├─ cart-store.ts      External store keranjang (localStorage)
+│  ├─ filters.ts         Definisi filter, penyaringan, penghitung facet
 │  ├─ whatsapp.ts        Penyusun pesan & tautan wa.me
 │  └─ site-config.ts     Identitas toko (default)
 └─ middleware.ts         Penyegar sesi + penjaga rute /admin
 
 supabase/
 ├─ README.md             Panduan setup & aturan versi
-└─ v1/                   Migrasi versi 1 (01_schema → 04_seed)
+├─ v1/                   Skema awal (01_schema → 04_seed)
+└─ v2/                   Atribut filter produk
 ```
+
+Penyaringan dan penghitungan jumlah per opsi dikerjakan di `lib/filters.ts`,
+bukan lewat SQL per-facet. Alasannya: jalur data contoh dan Supabase jadi
+berperilaku sama persis, angka di tiap opsi selalu konsisten dengan hasil
+yang tampil, dan menambah facet baru tidak perlu mengubah query. Cara ini
+nyaman sampai sekitar seribu produk per kategori; di atas itu perlu
+dipindah ke agregasi di database.
 
 > **Kenapa masih `middleware.ts`, bukan `proxy.ts`?**
 > Next.js 16 mengganti namanya menjadi `proxy.ts`, tapi `proxy` selalu berjalan di

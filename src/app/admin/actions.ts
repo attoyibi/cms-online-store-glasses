@@ -91,8 +91,45 @@ function productPayload(formData: FormData) {
     category_id: String(formData.get("category_id") ?? "") || null,
     is_active: formData.get("is_active") === "on",
     is_featured: formData.get("is_featured") === "on",
+    lens_width_mm: toNumber(formData.get("lens_width_mm")),
     specs: parseSpecs(String(formData.get("specs") ?? "")),
   };
+}
+
+/** Semua kotak centang atribut dikirim dengan nama yang sama */
+function attributeIds(formData: FormData): string[] {
+  return formData.getAll("attributes").map(String).filter(Boolean);
+}
+
+/**
+ * Samakan daftar atribut produk dengan yang dicentang di form.
+ * Dihapus dulu semuanya lalu dipasang ulang — lebih sederhana dan
+ * aman daripada menghitung selisihnya, dan jumlah barisnya sedikit.
+ */
+async function syncAttributes(
+  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  productId: string,
+  ids: string[],
+): Promise<string | null> {
+  const { error: clearError } = await supabase
+    .from("product_attribute_links")
+    .delete()
+    .eq("product_id", productId);
+
+  // Tabelnya belum ada berarti migrasi v2 belum dijalankan — produk tetap
+  // tersimpan, hanya atributnya diabaikan.
+  if (clearError) return null;
+
+  if (ids.length === 0) return null;
+
+  const { error } = await supabase.from("product_attribute_links").insert(
+    ids.map((attributeId) => ({
+      product_id: productId,
+      attribute_id: attributeId,
+    })),
+  );
+
+  return error ? `Produk tersimpan, tapi atribut gagal: ${error.message}` : null;
 }
 
 function validateProduct(
@@ -117,15 +154,27 @@ export async function createProduct(
   const invalid = validateProduct(payload);
   if (invalid) return { error: invalid };
 
-  const { error } = await supabase.from("products").insert(payload);
-  if (error) {
+  const { data, error } = await supabase
+    .from("products")
+    .insert(payload)
+    .select("id")
+    .single();
+
+  if (error || !data) {
     return {
       error:
-        error.code === "23505"
+        error?.code === "23505"
           ? "Slug sudah dipakai produk lain."
-          : `Gagal menyimpan: ${error.message}`,
+          : `Gagal menyimpan: ${error?.message ?? "tidak diketahui"}`,
     };
   }
+
+  const attributeError = await syncAttributes(
+    supabase,
+    data.id as string,
+    attributeIds(formData),
+  );
+  if (attributeError) return { error: attributeError };
 
   revalidateShop();
   redirect("/admin/produk");
@@ -156,6 +205,13 @@ export async function updateProduct(
           : `Gagal menyimpan: ${error.message}`,
     };
   }
+
+  const attributeError = await syncAttributes(
+    supabase,
+    id,
+    attributeIds(formData),
+  );
+  if (attributeError) return { error: attributeError };
 
   revalidateShop();
   redirect("/admin/produk");
@@ -236,6 +292,69 @@ export async function deleteCategory(formData: FormData) {
   await supabase.from("categories").delete().eq("id", id);
   revalidateShop();
   redirect("/admin/kategori");
+}
+
+// ---------------------------------------------------------- attributes
+
+const ATTRIBUTE_TYPES = ["bentuk", "material", "warna"] as const;
+
+export async function saveAttribute(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const { supabase } = await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  const type = String(formData.get("type") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const slugInput = String(formData.get("slug") ?? "").trim();
+  const swatch = String(formData.get("swatch_hex") ?? "").trim();
+
+  if (!ATTRIBUTE_TYPES.includes(type as (typeof ATTRIBUTE_TYPES)[number])) {
+    return { error: "Jenis atribut tidak dikenal." };
+  }
+  if (!name) return { error: "Nama wajib diisi." };
+
+  const slug = slugInput ? slugify(slugInput) : slugify(name);
+  if (!slug) return { error: "Slug tidak valid — gunakan huruf dan angka." };
+
+  const payload = {
+    type,
+    name,
+    slug,
+    // Warna butuh kode hex untuk bulatan warnanya; jenis lain tidak
+    swatch_hex: type === "warna" && swatch ? swatch : null,
+    sort_order: toNumber(formData.get("sort_order")) ?? 0,
+    is_active: formData.get("is_active") === "on",
+  };
+
+  const { error } = id
+    ? await supabase.from("product_attributes").update(payload).eq("id", id)
+    : await supabase.from("product_attributes").insert(payload);
+
+  if (error) {
+    return {
+      error:
+        error.code === "23505"
+          ? `Slug "${slug}" sudah dipakai di jenis ${type}.`
+          : `Gagal menyimpan: ${error.message}`,
+    };
+  }
+
+  revalidateShop();
+  redirect("/admin/atribut");
+}
+
+export async function deleteAttribute(formData: FormData) {
+  const { supabase } = await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  // Pemasangan ke produk ikut terhapus lewat ON DELETE CASCADE,
+  // produknya sendiri tidak terpengaruh.
+  await supabase.from("product_attributes").delete().eq("id", id);
+  revalidateShop();
+  redirect("/admin/atribut");
 }
 
 // ------------------------------------------------------------ settings

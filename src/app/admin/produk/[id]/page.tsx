@@ -5,8 +5,13 @@ import { ArrowLeft } from "lucide-react";
 import { deleteProduct } from "@/app/admin/actions";
 import { DeleteButton } from "@/components/admin/delete-button";
 import { ProductForm } from "@/components/admin/product-form";
+import { loadProductFormOptions } from "@/lib/data/admin-queries";
 import { requireAdmin } from "@/lib/supabase/admin";
-import type { Category, Product } from "@/lib/types";
+import type { Product, ProductAttribute } from "@/lib/types";
+
+type RawProduct = Omit<Product, "attributes"> & {
+  links?: { attribute: ProductAttribute | null }[] | null;
+};
 
 export default async function EditProductPage(
   props: PageProps<"/admin/produk/[id]">,
@@ -14,17 +19,37 @@ export default async function EditProductPage(
   const { id } = await props.params;
   const { supabase } = await requireAdmin();
 
-  const [productResult, categoriesResult] = await Promise.all([
-    supabase
-      .from("products")
-      .select("*, category:categories(id, slug, name)")
-      .eq("id", id)
-      .maybeSingle(),
-    supabase.from("categories").select("*").order("sort_order"),
-  ]);
+  const withAttributes =
+    "*, category:categories(id, slug, name), links:product_attribute_links(attribute:product_attributes(*))";
 
-  const product = productResult.data as unknown as Product | null;
-  if (!product) notFound();
+  const primary = await supabase
+    .from("products")
+    .select(withAttributes)
+    .eq("id", id)
+    .maybeSingle();
+
+  // Ulangi tanpa join bila migrasi v2 belum dijalankan
+  const result = primary.error
+    ? await supabase
+        .from("products")
+        .select("*, category:categories(id, slug, name)")
+        .eq("id", id)
+        .maybeSingle()
+    : primary;
+
+  const raw = result.data as unknown as RawProduct | null;
+  if (!raw) notFound();
+
+  const { links, ...rest } = raw;
+  const product: Product = {
+    ...rest,
+    lens_width_mm: rest.lens_width_mm ?? null,
+    attributes: (links ?? [])
+      .map((link) => link.attribute)
+      .filter((a): a is ProductAttribute => Boolean(a)),
+  };
+
+  const { categories, attributes, brands } = await loadProductFormOptions();
 
   return (
     <div className="space-y-6">
@@ -59,7 +84,9 @@ export default async function EditProductPage(
       </div>
 
       <ProductForm
-        categories={(categoriesResult.data ?? []) as Category[]}
+        categories={categories}
+        attributes={attributes}
+        brands={brands}
         product={product}
       />
     </div>

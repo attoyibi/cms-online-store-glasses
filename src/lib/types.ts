@@ -8,6 +8,24 @@ export type Category = {
   is_active: boolean;
 };
 
+export type AttributeType = "bentuk" | "material" | "warna";
+
+/** Nilai filter yang boleh dipakai — daftarnya dikelola dari /admin/atribut */
+export type ProductAttribute = {
+  id: string;
+  type: AttributeType;
+  slug: string;
+  name: string;
+  /** Hanya untuk warna: kode hex bulatan warna di filter */
+  swatch_hex: string | null;
+  sort_order: number;
+  /**
+   * Opsional karena query katalog sudah menyaring yang aktif saja —
+   * hanya halaman admin yang membaca nilainya.
+   */
+  is_active?: boolean;
+};
+
 export type Product = {
   id: string;
   slug: string;
@@ -24,7 +42,11 @@ export type Product = {
   category?: Pick<Category, "id" | "slug" | "name"> | null;
   is_active: boolean;
   is_featured: boolean;
-  /** Atribut bebas: material, bentuk, warna, ukuran, dst. */
+  /** Atribut terstruktur — dipakai untuk filter katalog */
+  attributes: ProductAttribute[];
+  /** Lebar satu lensa dalam mm. Null untuk produk non-frame seperti lensa. */
+  lens_width_mm: number | null;
+  /** Detail bebas yang hanya ditampilkan, tidak difilter */
   specs: Record<string, string>;
   created_at: string;
 };

@@ -1,9 +1,12 @@
-import type { Category, Product } from "@/lib/types";
+import type { Category, Product, ProductAttribute } from "@/lib/types";
 
 /**
  * Data contoh yang dipakai selama Supabase belum dikonfigurasi.
  * Bentuknya identik dengan hasil query agar komponen tidak perlu tahu
  * dari mana datanya berasal.
+ *
+ * Isinya dijaga sama dengan supabase/v1/04_seed.sql dan
+ * supabase/v2/02_seed_attributes.sql.
  */
 
 export const sampleCategories: Category[] = [
@@ -63,14 +66,50 @@ export const sampleCategories: Category[] = [
   },
 ];
 
+export const sampleAttributes: ProductAttribute[] = [
+  { id: "b1", type: "bentuk", slug: "bundar", name: "Bundar", swatch_hex: null, sort_order: 1 },
+  { id: "b2", type: "bentuk", slug: "kotak", name: "Kotak", swatch_hex: null, sort_order: 2 },
+  { id: "b3", type: "bentuk", slug: "persegi-panjang", name: "Persegi Panjang", swatch_hex: null, sort_order: 3 },
+  { id: "b4", type: "bentuk", slug: "cat-eye", name: "Cat-Eye", swatch_hex: null, sort_order: 4 },
+  { id: "b5", type: "bentuk", slug: "aviator", name: "Aviator", swatch_hex: null, sort_order: 5 },
+  { id: "b6", type: "bentuk", slug: "browline", name: "Browline", swatch_hex: null, sort_order: 6 },
+
+  { id: "m1", type: "material", slug: "asetat", name: "Asetat", swatch_hex: null, sort_order: 1 },
+  { id: "m2", type: "material", slug: "titanium", name: "Titanium", swatch_hex: null, sort_order: 2 },
+  { id: "m3", type: "material", slug: "metal", name: "Metal", swatch_hex: null, sort_order: 3 },
+  { id: "m4", type: "material", slug: "stainless-steel", name: "Stainless Steel", swatch_hex: null, sort_order: 4 },
+  { id: "m5", type: "material", slug: "tr90", name: "TR90", swatch_hex: null, sort_order: 5 },
+
+  { id: "w1", type: "warna", slug: "hitam", name: "Hitam", swatch_hex: "#1F2421", sort_order: 1 },
+  { id: "w2", type: "warna", slug: "cokelat", name: "Cokelat", swatch_hex: "#6B4F3A", sort_order: 2 },
+  { id: "w3", type: "warna", slug: "abu", name: "Abu-abu", swatch_hex: "#6E7780", sort_order: 3 },
+  { id: "w4", type: "warna", slug: "hijau", name: "Hijau", swatch_hex: "#2F5D4A", sort_order: 4 },
+  { id: "w5", type: "warna", slug: "rose", name: "Rose", swatch_hex: "#C89A94", sort_order: 5 },
+  { id: "w6", type: "warna", slug: "amber", name: "Amber", swatch_hex: "#C99B4F", sort_order: 6 },
+  { id: "w7", type: "warna", slug: "bening", name: "Bening", swatch_hex: "#DCE3E0", sort_order: 7 },
+  { id: "w8", type: "warna", slug: "gold", name: "Gold", swatch_hex: "#C9A24B", sort_order: 8 },
+  { id: "w9", type: "warna", slug: "silver", name: "Silver", swatch_hex: "#B9BEC2", sort_order: 9 },
+];
+
 const categoryRef = (id: string) => {
   const found = sampleCategories.find((c) => c.id === id);
-  return found
-    ? { id: found.id, slug: found.slug, name: found.name }
-    : null;
+  return found ? { id: found.id, slug: found.slug, name: found.name } : null;
 };
 
-type Seed = Omit<Product, "category"> & { category_id: string };
+/** "bentuk:kotak" → objek atribut lengkap */
+const attributeRefs = (keys: string[]): ProductAttribute[] =>
+  keys
+    .map((key) => {
+      const [type, slug] = key.split(":");
+      return sampleAttributes.find((a) => a.type === type && a.slug === slug);
+    })
+    .filter((a): a is ProductAttribute => Boolean(a));
+
+type Seed = Omit<Product, "category" | "attributes"> & {
+  category_id: string;
+  /** Format "tipe:slug", boleh lebih dari satu material atau warna */
+  attrs: string[];
+};
 
 const seeds: Seed[] = [
   {
@@ -87,6 +126,8 @@ const seeds: Seed[] = [
     category_id: "cat-pria",
     is_active: true,
     is_featured: true,
+    attrs: ["bentuk:kotak", "material:asetat", "warna:hitam"],
+    lens_width_mm: 52,
     specs: {
       Material: "Asetat premium",
       Bentuk: "Persegi",
@@ -111,6 +152,8 @@ const seeds: Seed[] = [
     category_id: "cat-wanita",
     is_active: true,
     is_featured: true,
+    attrs: ["bentuk:cat-eye", "material:asetat", "warna:rose"],
+    lens_width_mm: 50,
     specs: {
       Material: "Asetat Italia",
       Bentuk: "Cat-eye",
@@ -135,6 +178,8 @@ const seeds: Seed[] = [
     category_id: "cat-premium",
     is_active: true,
     is_featured: true,
+    attrs: ["bentuk:bundar", "material:titanium", "warna:hitam"],
+    lens_width_mm: 47,
     specs: {
       Material: "Titanium beta",
       Bentuk: "Bundar",
@@ -159,6 +204,8 @@ const seeds: Seed[] = [
     category_id: "cat-sunglasses",
     is_active: true,
     is_featured: true,
+    attrs: ["bentuk:aviator", "material:stainless-steel", "warna:gold"],
+    lens_width_mm: 58,
     specs: {
       Material: "Stainless steel",
       Bentuk: "Aviator",
@@ -183,6 +230,8 @@ const seeds: Seed[] = [
     category_id: "cat-pria",
     is_active: true,
     is_featured: true,
+    attrs: ["bentuk:browline", "material:asetat", "material:metal", "warna:hijau"],
+    lens_width_mm: 51,
     specs: {
       Material: "Asetat + metal",
       Bentuk: "Browline",
@@ -207,6 +256,8 @@ const seeds: Seed[] = [
     category_id: "cat-wanita",
     is_active: true,
     is_featured: false,
+    attrs: ["bentuk:persegi-panjang", "material:tr90", "warna:abu"],
+    lens_width_mm: 53,
     specs: {
       Material: "TR90",
       Bentuk: "Persegi panjang",
@@ -231,6 +282,8 @@ const seeds: Seed[] = [
     category_id: "cat-anak",
     is_active: true,
     is_featured: false,
+    attrs: ["bentuk:bundar", "material:tr90", "warna:cokelat"],
+    lens_width_mm: 44,
     specs: {
       Material: "TR90 fleksibel",
       Bentuk: "Bundar",
@@ -255,6 +308,8 @@ const seeds: Seed[] = [
     category_id: "cat-wanita",
     is_active: true,
     is_featured: false,
+    attrs: ["bentuk:kotak", "material:asetat", "warna:amber"],
+    lens_width_mm: 54,
     specs: {
       Material: "Asetat transparan",
       Bentuk: "Persegi",
@@ -279,6 +334,8 @@ const seeds: Seed[] = [
     category_id: "cat-sunglasses",
     is_active: true,
     is_featured: false,
+    attrs: ["bentuk:cat-eye", "material:asetat", "warna:cokelat"],
+    lens_width_mm: 56,
     specs: {
       Material: "Asetat",
       Bentuk: "Cat-eye",
@@ -303,6 +360,8 @@ const seeds: Seed[] = [
     category_id: "cat-premium",
     is_active: true,
     is_featured: false,
+    attrs: ["bentuk:browline", "material:titanium", "warna:abu"],
+    lens_width_mm: 52,
     specs: {
       Material: "Titanium",
       Bentuk: "Browline",
@@ -327,6 +386,8 @@ const seeds: Seed[] = [
     category_id: "cat-lensa",
     is_active: true,
     is_featured: true,
+    attrs: [],
+    lens_width_mm: null,
     specs: {
       Tipe: "Single vision",
       Indeks: "1.56",
@@ -350,6 +411,8 @@ const seeds: Seed[] = [
     category_id: "cat-lensa",
     is_active: true,
     is_featured: false,
+    attrs: [],
+    lens_width_mm: null,
     specs: {
       Tipe: "Progresif",
       Indeks: "1.60",
@@ -373,6 +436,8 @@ const seeds: Seed[] = [
     category_id: "cat-lensa",
     is_active: true,
     is_featured: false,
+    attrs: [],
+    lens_width_mm: null,
     specs: {
       Tipe: "Photochromic",
       Indeks: "1.56",
@@ -396,6 +461,8 @@ const seeds: Seed[] = [
     category_id: "cat-pria",
     is_active: true,
     is_featured: false,
+    attrs: ["bentuk:persegi-panjang", "material:asetat", "warna:hijau"],
+    lens_width_mm: 54,
     specs: {
       Material: "Asetat",
       Bentuk: "Persegi panjang",
@@ -420,6 +487,8 @@ const seeds: Seed[] = [
     category_id: "cat-anak",
     is_active: true,
     is_featured: false,
+    attrs: ["bentuk:kotak", "material:tr90", "warna:amber"],
+    lens_width_mm: 46,
     specs: {
       Material: "TR90 fleksibel",
       Bentuk: "Persegi",
@@ -444,6 +513,8 @@ const seeds: Seed[] = [
     category_id: "cat-sunglasses",
     is_active: true,
     is_featured: false,
+    attrs: ["bentuk:aviator", "material:stainless-steel", "warna:hitam"],
+    lens_width_mm: 59,
     specs: {
       Material: "Stainless steel",
       Bentuk: "Aviator",
@@ -468,6 +539,8 @@ const seeds: Seed[] = [
     category_id: "cat-wanita",
     is_active: true,
     is_featured: false,
+    attrs: ["bentuk:bundar", "material:asetat", "material:metal", "warna:cokelat"],
+    lens_width_mm: 48,
     specs: {
       Material: "Asetat + metal",
       Bentuk: "Bundar",
@@ -492,6 +565,8 @@ const seeds: Seed[] = [
     category_id: "cat-premium",
     is_active: true,
     is_featured: false,
+    attrs: ["bentuk:kotak", "material:asetat", "warna:hitam"],
+    lens_width_mm: 53,
     specs: {
       Material: "Asetat Jepang",
       Bentuk: "Persegi",
@@ -504,7 +579,8 @@ const seeds: Seed[] = [
   },
 ];
 
-export const sampleProducts: Product[] = seeds.map((seed) => ({
+export const sampleProducts: Product[] = seeds.map(({ attrs, ...seed }) => ({
   ...seed,
   category: categoryRef(seed.category_id),
+  attributes: attributeRefs(attrs),
 }));

@@ -2,16 +2,10 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 import { ProductForm } from "@/components/admin/product-form";
-import { requireAdmin } from "@/lib/supabase/admin";
-import type { Category } from "@/lib/types";
+import { loadProductFormOptions } from "@/lib/data/admin-queries";
 
 export default async function NewProductPage() {
-  const { supabase } = await requireAdmin();
-
-  const { data } = await supabase
-    .from("categories")
-    .select("*")
-    .order("sort_order", { ascending: true });
+  const { categories, attributes, brands } = await loadProductFormOptions();
 
   return (
     <div className="space-y-6">
@@ -26,7 +20,11 @@ export default async function NewProductPage() {
         <h1 className="text-2xl font-semibold">Tambah Produk</h1>
       </div>
 
-      <ProductForm categories={(data ?? []) as Category[]} />
+      <ProductForm
+        categories={categories}
+        attributes={attributes}
+        brands={brands}
+      />
     </div>
   );
 }

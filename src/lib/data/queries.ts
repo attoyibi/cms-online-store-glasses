@@ -1,11 +1,31 @@
 import "server-only";
 
-import { sampleCategories, sampleProducts } from "@/lib/data/sample-data";
+import {
+  sampleAttributes,
+  sampleCategories,
+  sampleProducts,
+} from "@/lib/data/sample-data";
+import {
+  applyFilters,
+  buildFacets,
+  type CatalogFilters,
+  type Facets,
+} from "@/lib/filters";
 import { siteConfig } from "@/lib/site-config";
 import { createClient } from "@/lib/supabase/server";
-import type { Category, Product, StoreSettings } from "@/lib/types";
+import type {
+  Category,
+  Product,
+  ProductAttribute,
+  StoreSettings,
+} from "@/lib/types";
 
-const PRODUCT_SELECT = "*, category:categories(id, slug, name)";
+/** Select lengkap, termasuk atribut filter dari migrasi v2 */
+const PRODUCT_SELECT_FULL =
+  "*, category:categories(id, slug, name), links:product_attribute_links(attribute:product_attributes(*))";
+
+/** Cadangan bila v2 belum dijalankan — tabel atributnya belum ada */
+const PRODUCT_SELECT_BASIC = "*, category:categories(id, slug, name)";
 
 export type ProductSort = "terbaru" | "termurah" | "termahal" | "nama";
 
@@ -17,7 +37,6 @@ export type ProductQuery = {
   featuredOnly?: boolean;
 };
 
-/** Urutan yang sama dipakai baik oleh Supabase maupun data contoh */
 const SORT_COLUMN: Record<ProductSort, { column: string; ascending: boolean }> =
   {
     terbaru: { column: "created_at", ascending: false },
@@ -25,6 +44,43 @@ const SORT_COLUMN: Record<ProductSort, { column: string; ascending: boolean }> =
     termahal: { column: "price", ascending: false },
     nama: { column: "name", ascending: true },
   };
+
+/** Bentuk baris mentah dari Supabase sebelum atributnya diratakan */
+type RawProduct = Omit<Product, "attributes"> & {
+  links?: { attribute: ProductAttribute | null }[] | null;
+  attributes?: ProductAttribute[];
+};
+
+/** Ratakan hasil join many-to-many menjadi array atribut biasa */
+function normalize(rows: RawProduct[]): Product[] {
+  return rows.map((row) => {
+    const { links, ...rest } = row;
+    return {
+      ...rest,
+      lens_width_mm: rest.lens_width_mm ?? null,
+      attributes: (links ?? [])
+        .map((link) => link.attribute)
+        .filter((a): a is ProductAttribute => Boolean(a)),
+    };
+  });
+}
+
+export async function getAttributes(): Promise<ProductAttribute[]> {
+  const supabase = await createClient();
+  if (!supabase) return sampleAttributes;
+
+  const { data, error } = await supabase
+    .from("product_attributes")
+    .select("*")
+    .eq("is_active", true)
+    .order("type")
+    .order("sort_order");
+
+  // Tabel belum ada berarti migrasi v2 belum dijalankan — katalog tetap
+  // tampil, hanya tanpa opsi filter.
+  if (error || !data) return [];
+  return data as ProductAttribute[];
+}
 
 export async function getCategories(): Promise<Category[]> {
   const supabase = await createClient();
@@ -99,29 +155,65 @@ export async function getProducts(query: ProductQuery = {}): Promise<Product[]> 
     return limit ? rows.slice(0, limit) : rows;
   }
 
-  let builder = supabase
-    .from("products")
-    .select(PRODUCT_SELECT)
-    .eq("is_active", true);
+  const run = async (select: string) => {
+    let builder = supabase.from("products").select(select).eq("is_active", true);
 
-  if (categorySlug) {
-    builder = builder.eq("categories.slug", categorySlug);
-  }
-  if (featuredOnly) {
-    builder = builder.eq("is_featured", true);
-  }
-  if (search?.trim()) {
-    const needle = `%${search.trim()}%`;
-    builder = builder.or(`name.ilike.${needle},brand.ilike.${needle}`);
+    if (categorySlug) builder = builder.eq("categories.slug", categorySlug);
+    if (featuredOnly) builder = builder.eq("is_featured", true);
+    if (search?.trim()) {
+      const needle = `%${search.trim()}%`;
+      builder = builder.or(`name.ilike.${needle},brand.ilike.${needle}`);
+    }
+
+    const { column, ascending } = SORT_COLUMN[sort];
+    builder = builder.order(column, { ascending });
+    if (limit) builder = builder.limit(limit);
+
+    return builder;
+  };
+
+  let { data, error } = await run(PRODUCT_SELECT_FULL);
+
+  // Migrasi v2 belum dijalankan — ulangi tanpa join atribut supaya
+  // katalog tetap tampil, hanya tanpa filter.
+  if (error) {
+    ({ data, error } = await run(PRODUCT_SELECT_BASIC));
   }
 
-  const { column, ascending } = SORT_COLUMN[sort];
-  builder = builder.order(column, { ascending });
-  if (limit) builder = builder.limit(limit);
-
-  const { data, error } = await builder;
   if (error || !data) return [];
-  return data as unknown as Product[];
+  return normalize(data as unknown as RawProduct[]);
+}
+
+export type CatalogResult = {
+  /** Produk setelah filter diterapkan */
+  products: Product[];
+  facets: Facets;
+  /** Jumlah sebelum filter — untuk pesan "0 dari 18 produk" */
+  totalBeforeFilters: number;
+};
+
+/**
+ * Sumber data halaman katalog.
+ *
+ * Filter dan penghitungan jumlah per opsi dikerjakan di sini, bukan di SQL,
+ * supaya jalur data contoh dan Supabase berperilaku sama dan angkanya selalu
+ * konsisten dengan hasil yang tampil. Lihat catatan di `lib/filters.ts`.
+ */
+export async function getCatalog(
+  query: ProductQuery & { filters: CatalogFilters },
+): Promise<CatalogResult> {
+  const { filters, ...productQuery } = query;
+
+  const [base, attributes] = await Promise.all([
+    getProducts(productQuery),
+    getAttributes(),
+  ]);
+
+  return {
+    products: applyFilters(base, filters),
+    facets: buildFacets(base, filters, attributes),
+    totalBeforeFilters: base.length,
+  };
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {
@@ -130,14 +222,19 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
     return sampleProducts.find((p) => p.slug === slug && p.is_active) ?? null;
   }
 
-  const { data } = await supabase
-    .from("products")
-    .select(PRODUCT_SELECT)
-    .eq("slug", slug)
-    .eq("is_active", true)
-    .maybeSingle();
+  const run = (select: string) =>
+    supabase
+      .from("products")
+      .select(select)
+      .eq("slug", slug)
+      .eq("is_active", true)
+      .maybeSingle();
 
-  return (data as unknown as Product | null) ?? null;
+  let { data, error } = await run(PRODUCT_SELECT_FULL);
+  if (error) ({ data, error } = await run(PRODUCT_SELECT_BASIC));
+  if (!data) return null;
+
+  return normalize([data as unknown as RawProduct])[0] ?? null;
 }
 
 /** Produk lain dari kategori yang sama, tanpa menyertakan produk saat ini */

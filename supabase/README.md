@@ -14,11 +14,13 @@ bisa ditelusuri.
 supabase/
 ├─ README.md      ← file ini
 ├─ v1/            ← versi awal (JANGAN diubah lagi)
-└─ v2/            ← perubahan berikutnya ditaruh di sini
+├─ v2/            ← atribut filter (JANGAN diubah lagi)
+└─ v3/            ← perubahan berikutnya ditaruh di sini
 ```
 
-Kalau nanti perlu menambah kolom atau tabel: buat `v2/`, isi dengan
-`ALTER TABLE …` seperlunya saja — **bukan** salinan lengkap v1.
+Kalau nanti perlu menambah kolom atau tabel: buat folder versi berikutnya,
+isi dengan `ALTER TABLE …` seperlunya saja — **bukan** salinan lengkap
+versi sebelumnya.
 
 Versi yang sudah dijalankan tercatat di tabel `schema_versions`:
 
@@ -37,6 +39,25 @@ Jalankan berurutan. Semuanya aman dijalankan ulang (idempoten).
 | 3 | [`v1/03_storage.sql`](v1/03_storage.sql) | Bucket `product-images` untuk foto produk | ✅ |
 | 4 | [`v1/04_seed.sql`](v1/04_seed.sql) | 6 kategori + 18 produk contoh | opsional |
 | — | [`v1/99_reset.sql`](v1/99_reset.sql) | ⚠️ Hapus semua, untuk mulai dari nol | jangan disentuh |
+
+## Versi 2 — atribut filter
+
+Menambahkan data terstruktur yang menggerakkan filter katalog. Tanpa ini
+katalog tetap tampil, hanya tanpa filter.
+
+| # | File | Isi | Wajib? |
+| - | ---- | --- | ------ |
+| 1 | [`v2/01_attributes.sql`](v2/01_attributes.sql) | Tabel atribut, relasi ke produk, kolom lebar lensa, RLS | ✅ |
+| 2 | [`v2/02_seed_attributes.sql`](v2/02_seed_attributes.sql) | Daftar bentuk/material/warna + pemasangan ke produk contoh | ✅ |
+
+**Kenapa perlu tabel sendiri?** Sampai v1, detail produk hanya ada di kolom
+`specs` berupa JSON bebas. Bagus untuk ditampilkan, tapi tidak bisa
+difilter — "Asetat premium", "asetat", dan "Acetate" akan jadi tiga opsi
+filter berbeda untuk barang yang sama. Dengan v2, admin **memilih** dari
+daftar, bukan mengetik. Kolom `specs` tetap ada dan tidak berubah.
+
+Opsi filter baru bisa ditambah kapan saja lewat **/admin/atribut** tanpa
+perlu menjalankan SQL lagi.
 
 ### Setelah SQL selesai
 
@@ -71,6 +92,8 @@ Jalankan berurutan. Semuanya aman dijalankan ulang (idempoten).
 | `categories` | Kategori produk (`sort_order` menentukan urutan di beranda) |
 | `products` | Produk. `price` dalam rupiah penuh (bukan sen), `specs` berupa JSON bebas |
 | `store_settings` | Baris tunggal: nama toko, nomor WhatsApp, alamat, pengumuman |
+| `product_attributes` | Daftar pilihan filter: bentuk, material, warna |
+| `product_attribute_links` | Atribut mana dipakai produk mana (many-to-many) |
 | `schema_versions` | Catatan versi migrasi yang sudah dijalankan |
 
 ## Model keamanan

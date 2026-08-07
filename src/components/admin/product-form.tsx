@@ -10,11 +10,12 @@ import {
   updateProduct,
   type ActionState,
 } from "@/app/admin/actions";
+import { AttributePicker } from "@/components/admin/attribute-picker";
 import { ImageUploader } from "@/components/admin/image-uploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { Category, Product } from "@/lib/types";
+import type { Category, Product, ProductAttribute } from "@/lib/types";
 
 const textareaClass =
   "flex w-full rounded-lg border bg-transparent px-3 py-2 text-sm shadow-xs outline-none transition-[color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50";
@@ -31,9 +32,14 @@ function SubmitButton({ label }: { label: string }) {
 
 export function ProductForm({
   categories,
+  attributes,
+  brands,
   product,
 }: {
   categories: Category[];
+  attributes: ProductAttribute[];
+  /** Merek yang sudah dipakai, jadi saran agar ejaannya konsisten */
+  brands: string[];
   product?: Product;
 }) {
   const isEdit = Boolean(product);
@@ -92,9 +98,17 @@ export function ProductForm({
             <Input
               id="brand"
               name="brand"
+              list="brand-suggestions"
               defaultValue={product?.brand ?? ""}
               placeholder="Lensara Studio"
             />
+            {/* Saran dari merek yang sudah ada — mencegah "Solano" dan
+                "solano" muncul sebagai dua filter berbeda */}
+            <datalist id="brand-suggestions">
+              {brands.map((brand) => (
+                <option key={brand} value={brand} />
+              ))}
+            </datalist>
           </div>
 
           <div className="space-y-2">
@@ -165,6 +179,34 @@ export function ProductForm({
               placeholder="0"
             />
           </div>
+        </div>
+      </fieldset>
+
+      <fieldset className="space-y-4 border-t pt-6">
+        <legend className="text-sm font-semibold">Atribut Filter</legend>
+        <p className="text-xs text-muted-foreground">
+          Menentukan produk ini muncul di filter mana. Berbeda dari
+          Spesifikasi di bawah, yang hanya ditampilkan dan tidak difilter.
+        </p>
+
+        <AttributePicker
+          attributes={attributes}
+          selectedIds={product?.attributes.map((a) => a.id) ?? []}
+        />
+
+        <div className="max-w-xs space-y-2">
+          <Label htmlFor="lens_width_mm">Lebar lensa (mm)</Label>
+          <Input
+            id="lens_width_mm"
+            name="lens_width_mm"
+            inputMode="numeric"
+            defaultValue={product?.lens_width_mm ?? ""}
+            placeholder="52"
+          />
+          <p className="text-xs text-muted-foreground">
+            Dipakai filter ukuran: ≤49 sempit, 50–54 sedang, ≥55 lebar.
+            Kosongkan untuk produk non-frame seperti lensa.
+          </p>
         </div>
       </fieldset>
 
