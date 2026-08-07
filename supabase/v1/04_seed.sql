@@ -1,8 +1,14 @@
 -- =============================================================
--- Data contoh — jalankan setelah schema.sql
--- Isinya sama persis dengan src/lib/data/sample-data.ts sehingga
--- tampilan situs tidak berubah saat Supabase mulai dipakai.
--- Aman dijalankan ulang (upsert berdasarkan slug).
+--  v1 · 04 · DATA CONTOH (opsional)
+--
+--  Isinya sama persis dengan src/lib/data/sample-data.ts, jadi
+--  tampilan situs tidak berubah saat Supabase mulai dipakai.
+--
+--  Lewati file ini kalau Anda mau langsung mengisi produk sendiri
+--  lewat halaman /admin.
+--
+--  Aman dijalankan ulang — memakai upsert berdasarkan slug, jadi
+--  tidak akan membuat duplikat.
 -- =============================================================
 
 insert into public.categories (slug, name, description, image_url, sort_order)
@@ -148,3 +154,8 @@ on conflict (slug) do update set
   category_id      = excluded.category_id,
   is_featured      = excluded.is_featured,
   specs            = excluded.specs;
+
+-- Ringkasan hasil
+select
+  (select count(*) from public.categories) as total_kategori,
+  (select count(*) from public.products)   as total_produk;

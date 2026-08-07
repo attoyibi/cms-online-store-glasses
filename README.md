@@ -47,21 +47,27 @@ Tanpa kredensial Supabase, situs tetap jalan memakai data contoh di
 ## Menghubungkan Supabase
 
 1. Buat proyek di [supabase.com](https://supabase.com/dashboard).
-2. SQL Editor → jalankan `supabase/schema.sql`, lalu `supabase/seed.sql` untuk data contoh.
+2. SQL Editor → jalankan isi `supabase/v1/` berurutan: `01_schema` → `02_rls` →
+   `03_storage` → `04_seed` (yang terakhir opsional, isinya data contoh).
 3. Salin `.env.example` menjadi `.env.local`, isi `NEXT_PUBLIC_SUPABASE_URL` dan
    `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Project Settings → API).
 4. Authentication → Users → **Add user**, buat akun admin.
-5. Daftarkan akun itu sebagai admin:
+5. Daftarkan akun itu sebagai admin — **langkah ini wajib**, tanpa ini login
+   berhasil tapi semua data gagal dimuat karena ditolak RLS:
 
    ```sql
    insert into public.admins (user_id, email)
-   select id, email from auth.users where email = 'email-anda@contoh.com';
+   select id, email from auth.users where email = 'email-anda@contoh.com'
+   on conflict (user_id) do nothing;
    ```
 
 6. Restart `npm run dev`, lalu masuk lewat `/admin/login`.
 
 Row Level Security sudah aktif: publik hanya bisa **membaca** data yang `is_active`,
 dan hanya user yang terdaftar di tabel `admins` yang bisa menulis.
+
+Penjelasan tiap file SQL dan aturan penambahan versi ada di
+[`supabase/README.md`](supabase/README.md).
 
 ## Deploy ke Cloudflare
 
@@ -113,11 +119,15 @@ src/
 │  └─ ui/                Komponen shadcn/ui
 ├─ lib/
 │  ├─ data/              Query Supabase + data contoh
-│  ├─ supabase/          Client browser/server, guard admin, proxy
+│  ├─ supabase/          Client browser/server, guard admin, middleware
 │  ├─ cart-store.ts      External store keranjang (localStorage)
 │  ├─ whatsapp.ts        Penyusun pesan & tautan wa.me
 │  └─ site-config.ts     Identitas toko (default)
 └─ middleware.ts         Penyegar sesi + penjaga rute /admin
+
+supabase/
+├─ README.md             Panduan setup & aturan versi
+└─ v1/                   Migrasi versi 1 (01_schema → 04_seed)
 ```
 
 > **Kenapa masih `middleware.ts`, bukan `proxy.ts`?**

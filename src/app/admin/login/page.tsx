@@ -38,9 +38,9 @@ export default function LoginPage() {
                 </a>
               </li>
               <li>
-                Jalankan <code className="font-mono">supabase/schema.sql</code>{" "}
-                lalu <code className="font-mono">supabase/seed.sql</code> di SQL
-                Editor
+                Jalankan isi folder{" "}
+                <code className="font-mono">supabase/v1/</code> secara berurutan
+                di SQL Editor (01 → 04)
               </li>
               <li>
                 Salin URL dan anon key ke{" "}
