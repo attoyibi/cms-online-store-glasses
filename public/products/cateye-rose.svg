@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000" role="img" aria-label="Ilustrasi kacamata cateye">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="38%" r="72%">
+      <stop offset="0%" stop-color="#FAF3F1" />
+      <stop offset="100%" stop-color="#F3E9E7" />
+    </radialGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#g)" />
+  <ellipse cx="400" cy="730" rx="230" ry="26" fill="#3A2A28" opacity="0.08" />
+  <g stroke="#3A2A28" stroke-width="13">
+    
+    <path d="M 140 416
+      C 214 438 322 442 374 470
+      C 382 540 320 610 244 606
+      C 184 602 150 556 150 508
+      C 150 472 144 438 140 416 Z" fill="#DFCBC7" />
+    <path d="M 660 416
+      C 586 438 478 442 426 470
+      C 418 540 480 610 556 606
+      C 616 602 650 556 650 508
+      C 650 472 656 438 660 416 Z" fill="#DFCBC7" />
+    <path d="M 140 416
+      C 214 438 322 442 374 470
+      C 382 540 320 610 244 606
+      C 184 602 150 556 150 508
+      C 150 472 144 438 140 416 Z" fill="none" stroke-linejoin="round" />
+    <path d="M 660 416
+      C 586 438 478 442 426 470
+      C 418 540 480 610 556 606
+      C 616 602 650 556 650 508
+      C 650 472 656 438 660 416 Z" fill="none" stroke-linejoin="round" />
+    <path d="M 374 470 Q 400 454 426 470" fill="none" stroke-linecap="round" />
+    
+    <path d="M 152 476 L 86 458 L 56 550"
+      fill="none" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M 648 476 L 714 458 L 744 550"
+      fill="none" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>

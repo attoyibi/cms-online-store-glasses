@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000" role="img" aria-label="Ilustrasi kacamata round">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="38%" r="72%">
+      <stop offset="0%" stop-color="#FBF8F2" />
+      <stop offset="100%" stop-color="#F4EFE6" />
+    </radialGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#g)" />
+  <ellipse cx="400" cy="730" rx="230" ry="26" fill="#2F3A33" opacity="0.08" />
+  <g stroke="#2F3A33" stroke-width="13">
+    
+    <circle cx="278" cy="520" r="112" fill="#DCD3C4" />
+    <circle cx="522" cy="520" r="112" fill="#DCD3C4" />
+    <circle cx="278" cy="520" r="112" fill="none" />
+    <circle cx="522" cy="520" r="112" fill="none" />
+    <path d="M 390 496 Q 400 480 410 496" fill="none" stroke-linecap="round" />
+    
+    <path d="M 166 506 L 100 488 L 70 580"
+      fill="none" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M 634 506 L 700 488 L 730 580"
+      fill="none" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>

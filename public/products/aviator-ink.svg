@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000" role="img" aria-label="Ilustrasi kacamata aviator">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="38%" r="72%">
+      <stop offset="0%" stop-color="#2E3639" />
+      <stop offset="100%" stop-color="#22282B" />
+    </radialGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#g)" />
+  <ellipse cx="400" cy="730" rx="230" ry="26" fill="#E8EDE9" opacity="0.08" />
+  <g stroke="#E8EDE9" stroke-width="13">
+    
+    <path d="M 140 454 L 376 454 C 380 524 330 616 262 616
+             C 190 616 142 532 140 454 Z" fill="#39433F" />
+    <path d="M 660 454 L 424 454 C 420 524 470 616 538 616
+             C 610 616 658 532 660 454 Z" fill="#39433F" />
+    <path d="M 140 454 L 376 454 C 380 524 330 616 262 616
+             C 190 616 142 532 140 454 Z" fill="none" stroke-linejoin="round" />
+    <path d="M 660 454 L 424 454 C 420 524 470 616 538 616
+             C 610 616 658 532 660 454 Z" fill="none" stroke-linejoin="round" />
+    <path d="M 376 454 Q 400 486 424 454" fill="none" stroke-linecap="round" />
+    <path d="M 376 432 L 424 432" fill="none" stroke-width="9" stroke-linecap="round" />
+    
+    <path d="M 140 454 L 74 436 L 44 528"
+      fill="none" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M 660 454 L 726 436 L 756 528"
+      fill="none" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000" role="img" aria-label="Ilustrasi kacamata square">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="38%" r="72%">
+      <stop offset="0%" stop-color="#FCF7EC" />
+      <stop offset="100%" stop-color="#F5EDDC" />
+    </radialGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#g)" />
+  <ellipse cx="400" cy="730" rx="230" ry="26" fill="#42331C" opacity="0.08" />
+  <g stroke="#42331C" stroke-width="13">
+    
+    <rect x="128" y="424" width="256" height="192" rx="18" fill="#E0CFAC" />
+    <rect x="416" y="424" width="256" height="192" rx="18" fill="#E0CFAC" />
+    <rect x="128" y="424" width="256" height="192" rx="18" fill="none" stroke-width="18" />
+    <rect x="416" y="424" width="256" height="192" rx="18" fill="none" stroke-width="18" />
+    <path d="M 384 468 L 416 468" fill="none" stroke-width="18" stroke-linecap="round" />
+    
+    <path d="M 128 458 L 62 440 L 32 532"
+      fill="none" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M 672 458 L 738 440 L 768 532"
+      fill="none" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>

@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "main": ".open-next/worker.js",
+  "name": "cms-online-store-glasses",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  // Optimasi gambar lewat Cloudflare Images
+  "images": {
+    "binding": "IMAGES"
+  }
+  // Variabel NEXT_PUBLIC_* diambil saat build, jadi set lewat
+  // `.env.local` (lokal) atau Dashboard → Settings → Variables (produksi).
+}
