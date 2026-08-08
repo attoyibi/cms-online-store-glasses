@@ -28,9 +28,11 @@ async function checkRegistered(
  * Client Supabase + user yang sudah terverifikasi, untuk halaman & action admin.
  * Melempar redirect bila belum login atau Supabase belum dikonfigurasi.
  *
- * `isRegistered` sengaja dikembalikan sebagai flag, bukan dijadikan redirect:
- * memantulkan user kembali ke halaman login tanpa penjelasan justru membuat
- * penyebabnya makin sulit ditemukan.
+ * Sengaja TIDAK ikut memeriksa keanggotaan tabel `admins` di sini — kalau
+ * dilakukan, tiap halaman admin akan memanggil RPC dua kali (sekali dari
+ * layout, sekali dari halamannya). Pemeriksaannya cukup sekali di layout,
+ * yang menampilkan peringatannya; percobaan tulis yang telanjur lolos tetap
+ * ditolak RLS dan pesannya diterjemahkan oleh `describeError`.
  */
 export async function requireAdmin() {
   const supabase = await createClient();
@@ -42,7 +44,7 @@ export async function requireAdmin() {
 
   if (!user) redirect("/admin/login");
 
-  return { supabase, user, isRegistered: await checkRegistered(supabase) };
+  return { supabase, user };
 }
 
 /** Versi non-redirect, untuk tempat yang perlu menangani sendiri kegagalan */

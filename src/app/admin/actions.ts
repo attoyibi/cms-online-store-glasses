@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { slugify } from "@/lib/format";
 import { requireAdmin } from "@/lib/supabase/admin";
+import { describeError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
 
 export type ActionState = { error?: string; success?: string };
@@ -129,7 +130,9 @@ async function syncAttributes(
     })),
   );
 
-  return error ? `Produk tersimpan, tapi atribut gagal: ${error.message}` : null;
+  return error
+    ? describeError(error, "Produk tersimpan, tapi atributnya gagal")
+    : null;
 }
 
 function validateProduct(
@@ -165,7 +168,7 @@ export async function createProduct(
       error:
         error?.code === "23505"
           ? "Slug sudah dipakai produk lain."
-          : `Gagal menyimpan: ${error?.message ?? "tidak diketahui"}`,
+          : describeError(error),
     };
   }
 
@@ -202,7 +205,7 @@ export async function updateProduct(
       error:
         error.code === "23505"
           ? "Slug sudah dipakai produk lain."
-          : `Gagal menyimpan: ${error.message}`,
+          : describeError(error),
     };
   }
 
@@ -274,7 +277,7 @@ export async function saveCategory(
       error:
         error.code === "23505"
           ? "Slug sudah dipakai kategori lain."
-          : `Gagal menyimpan: ${error.message}`,
+          : describeError(error),
     };
   }
 
@@ -337,7 +340,7 @@ export async function saveAttribute(
       error:
         error.code === "23505"
           ? `Slug "${slug}" sudah dipakai di jenis ${type}.`
-          : `Gagal menyimpan: ${error.message}`,
+          : describeError(error),
     };
   }
 
@@ -383,7 +386,7 @@ export async function saveSettings(
     ? await supabase.from("store_settings").update(payload).eq("id", id)
     : await supabase.from("store_settings").insert(payload);
 
-  if (error) return { error: `Gagal menyimpan: ${error.message}` };
+  if (error) return { error: describeError(error) };
 
   revalidateShop();
   return { success: "Pengaturan tersimpan." };

@@ -7,6 +7,7 @@ import { ImagePlus, Loader2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
+import { describeError } from "@/lib/supabase/errors";
 import { cn } from "@/lib/utils";
 
 const BUCKET = "product-images";
@@ -65,7 +66,7 @@ export function ImageUploader({
           .upload(path, file, { cacheControl: "31536000", upsert: false });
 
         if (uploadError) {
-          setError(`${file.name}: ${uploadError.message}`);
+          setError(describeError(uploadError, `${file.name} gagal diunggah`));
           continue;
         }
 
