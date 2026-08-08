@@ -103,12 +103,24 @@ deploy gagal dengan:
 
 ### Variabel lingkungan
 
-Set di Dashboard → Settings → Variables sebelum deploy pertama:
+Set di **Dashboard → Settings → Build → "Build variables and secrets"**
+sebelum deploy pertama:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `NEXT_PUBLIC_WHATSAPP_NUMBER`
 - `NEXT_PUBLIC_SITE_URL`
+
+> **Jangan tertukar dengan Settings → Variables & Secrets.** Bagian itu untuk
+> variabel *runtime*, dan tidak akan berpengaruh di sini: Next.js menanam nilai
+> `NEXT_PUBLIC_*` ke dalam kode saat `next build`, jadi yang dibaca adalah
+> variabel yang tersedia saat **build**. Dokumentasi Cloudflare menegaskan
+> *"Build variables will not be accessible at runtime"* — dan sebaliknya.
+>
+> Gejala kalau salah tempat: nilainya kelihatan sudah diisi di Dashboard, tapi
+> situs tetap menampilkan data contoh — dan variabelnya hilang setiap deploy,
+> karena `wrangler.jsonc` menimpa binding runtime yang tidak tercantum di sana.
+> Build variables tidak ikut terhapus.
 
 > **Catatan macOS:** `npm run preview` dan `npm run cf-typegen` menjalankan `workerd`
 > secara lokal, yang butuh **macOS 13.5+**. `npm run deploy` tidak terpengaruh karena

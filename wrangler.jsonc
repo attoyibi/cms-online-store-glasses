@@ -12,6 +12,22 @@
   "images": {
     "binding": "IMAGES"
   }
-  // Variabel NEXT_PUBLIC_* diambil saat build, jadi set lewat
-  // `.env.local` (lokal) atau Dashboard → Settings → Variables (produksi).
+
+  // Sengaja TIDAK ada "vars" di sini.
+  //
+  // Semua variabel aplikasi ini berawalan NEXT_PUBLIC_, dan Next.js
+  // menanam nilainya langsung ke dalam kode saat `next build` — jadi
+  // yang dibutuhkan adalah variabel BUILD, bukan variabel runtime.
+  // "vars" di file ini hanya tersedia saat Worker melayani request,
+  // yang sudah terlambat: kodenya tidak membacanya lagi.
+  //
+  // Tempat mengisinya:
+  //   Lokal    → .env.local
+  //   Produksi → Dashboard → Settings → Build → "Build variables and secrets"
+  //              (BUKAN Settings → Variables & Secrets, itu untuk runtime)
+  //
+  // Catatan: variabel plaintext yang hanya diset di bagian runtime akan
+  // terhapus setiap `wrangler deploy`, karena file ini dianggap sumber
+  // kebenaran untuk binding Worker. Build variables tidak terpengaruh —
+  // wrangler tidak menyentuh konfigurasi build.
 }
