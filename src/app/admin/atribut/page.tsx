@@ -51,8 +51,9 @@ export default async function AdminAttributesPage() {
           role="alert"
           className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive"
         >
-          Gagal memuat: {error.message}. Kemungkinan migrasi{" "}
-          <code className="font-mono">supabase/v2/</code> belum dijalankan.
+          Gagal memuat: {error.message}. Kemungkinan{" "}
+          <code className="font-mono">supabase/v3/01_schema.sql</code> belum
+          dijalankan.
         </p>
       )}
 

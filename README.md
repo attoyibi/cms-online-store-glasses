@@ -49,11 +49,12 @@ Tanpa kredensial Supabase, situs tetap jalan memakai data contoh di
 ## Menghubungkan Supabase
 
 1. Buat proyek di [supabase.com](https://supabase.com/dashboard).
-2. SQL Editor → jalankan isi `supabase/v1/` berurutan (`01_schema` → `02_rls` →
-   `03_storage` → `04_seed`), lalu `supabase/v2/` (`01_attributes` →
-   `02_seed_attributes`). Hanya `04_seed` yang opsional — isinya data contoh.
+2. SQL Editor → jalankan `supabase/v3/01_schema.sql`, lalu
+   `supabase/v3/02_seed.sql` (opsional — isinya data contoh). Dua file itu
+   sudah mencakup semuanya; detail dan riwayat versinya ada di
+   [`supabase/README.md`](supabase/README.md).
 3. Salin `.env.example` menjadi `.env.local`, isi `NEXT_PUBLIC_SUPABASE_URL` dan
-   `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Project Settings → API).
+   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (Project Settings → API).
 4. Authentication → Users → **Add user**, buat akun admin.
 5. Daftarkan akun itu sebagai admin — **langkah ini wajib**, tanpa ini login
    berhasil tapi semua data gagal dimuat karena ditolak RLS:
@@ -154,8 +155,8 @@ src/
 
 supabase/
 ├─ README.md             Panduan setup & aturan versi
-├─ v1/                   Skema awal (01_schema → 04_seed)
-└─ v2/                   Atribut filter produk
+├─ v1/ + v2/              Riwayat — jangan diubah lagi
+└─ v3/                   Setup baru mulai dari sini (01_schema + 02_seed)
 ```
 
 Penyaringan dan penghitungan jumlah per opsi dikerjakan di `lib/filters.ts`,

@@ -38,7 +38,7 @@ export function AttributePicker({
     return (
       <p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
         Belum ada pilihan atribut. Jalankan{" "}
-        <code className="font-mono">supabase/v2/</code> lebih dulu, atau
+        <code className="font-mono">supabase/v3/01_schema.sql</code> lebih dulu, atau
         tambahkan lewat{" "}
         <Link
           href="/admin/atribut"

@@ -5,8 +5,8 @@ import type { Category, Product, ProductAttribute } from "@/lib/types";
  * Bentuknya identik dengan hasil query agar komponen tidak perlu tahu
  * dari mana datanya berasal.
  *
- * Isinya dijaga sama dengan supabase/v1/04_seed.sql dan
- * supabase/v2/02_seed_attributes.sql.
+ * Isinya dijaga sama dengan supabase/v3/02_seed.sql (dan versi
+ * riwayatnya, supabase/v1/04_seed.sql + supabase/v2/02_seed_attributes.sql).
  */
 
 export const sampleCategories: Category[] = [

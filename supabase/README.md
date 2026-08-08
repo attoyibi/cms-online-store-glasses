@@ -3,6 +3,32 @@
 SQL untuk menyiapkan database CMS toko kacamata. Semuanya dijalankan dengan
 **copy-paste ke Supabase Dashboard → SQL Editor → New query → Run**.
 
+## Setup baru? Pakai v3 — cuma 2 file
+
+```
+supabase/
+├─ README.md      ← file ini
+├─ v1/            ← riwayat (JANGAN diubah lagi)
+├─ v2/            ← riwayat (JANGAN diubah lagi)
+└─ v3/            ← pakai ini untuk setup baru
+```
+
+`v3` menggabungkan seluruh isi `v1` + `v2` jadi dua file saja, supaya
+setup awal cukup dua kali copy-paste, bukan enam:
+
+| # | File | Isi | Wajib? |
+| - | ---- | --- | ------ |
+| 1 | [`v3/01_schema.sql`](v3/01_schema.sql) | Semua tabel, index, trigger, RLS, dan bucket storage | ✅ |
+| 2 | [`v3/02_seed.sql`](v3/02_seed.sql) | 6 kategori, 18 produk contoh, dan atribut filternya | opsional |
+
+Isinya secara fungsional identik dengan menjalankan `v1/01` → `v1/02` →
+`v1/03` → `v2/01`, lalu `v1/04` → `v2/02`. Kalau database Anda memang
+masih kosong, jalankan `v3` saja dan lewati `v1`/`v2` sama sekali.
+
+`v1` dan `v2` tetap ada di repo sebagai riwayat — untuk proyek yang
+kebetulan sudah terlanjur menjalankannya secara terpisah sebelum `v3`
+ada. Isinya tidak akan diubah lagi.
+
 ## Aturan versi
 
 Setiap perubahan skema masuk ke **folder versi baru**. Folder versi lama
@@ -10,63 +36,26 @@ Setiap perubahan skema masuk ke **folder versi baru**. Folder versi lama
 jalan dengan versi lama tetap punya rujukan, dan urutan perubahannya
 bisa ditelusuri.
 
-```
-supabase/
-├─ README.md      ← file ini
-├─ v1/            ← versi awal (JANGAN diubah lagi)
-├─ v2/            ← atribut filter (JANGAN diubah lagi)
-└─ v3/            ← perubahan berikutnya ditaruh di sini
-```
+Kalau nanti perlu menambah kolom atau tabel: buat `v4/`, isi dengan
+`ALTER TABLE …` seperlunya saja — **bukan** salinan lengkap versi
+sebelumnya (itu yang membuat `v3` istimewa: dia sengaja dibuat sebagai
+bundel konsolidasi sekali jalan, bukan pola yang diulang tiap versi).
 
-Kalau nanti perlu menambah kolom atau tabel: buat folder versi berikutnya,
-isi dengan `ALTER TABLE …` seperlunya saja — **bukan** salinan lengkap
-versi sebelumnya.
-
-Versi yang sudah dijalankan tercatat di tabel `schema_versions`:
+Versi yang sudah dijalankan tercatat di tabel `schema_versions`. `v3`
+mencatat baris `v1`, `v2`, dan `v3` sekaligus karena isinya setara:
 
 ```sql
 select * from public.schema_versions order by applied_at;
 ```
 
-## Versi 1 — urutan menjalankan
-
-Jalankan berurutan. Semuanya aman dijalankan ulang (idempoten).
-
-| # | File | Isi | Wajib? |
-| - | ---- | --- | ------ |
-| 1 | [`v1/01_schema.sql`](v1/01_schema.sql) | Tabel, index, trigger, fungsi `is_admin()` | ✅ |
-| 2 | [`v1/02_rls.sql`](v1/02_rls.sql) | Row Level Security + policy | ✅ |
-| 3 | [`v1/03_storage.sql`](v1/03_storage.sql) | Bucket `product-images` untuk foto produk | ✅ |
-| 4 | [`v1/04_seed.sql`](v1/04_seed.sql) | 6 kategori + 18 produk contoh | opsional |
-| — | [`v1/99_reset.sql`](v1/99_reset.sql) | ⚠️ Hapus semua, untuk mulai dari nol | jangan disentuh |
-
-## Versi 2 — atribut filter
-
-Menambahkan data terstruktur yang menggerakkan filter katalog. Tanpa ini
-katalog tetap tampil, hanya tanpa filter.
-
-| # | File | Isi | Wajib? |
-| - | ---- | --- | ------ |
-| 1 | [`v2/01_attributes.sql`](v2/01_attributes.sql) | Tabel atribut, relasi ke produk, kolom lebar lensa, RLS | ✅ |
-| 2 | [`v2/02_seed_attributes.sql`](v2/02_seed_attributes.sql) | Daftar bentuk/material/warna + pemasangan ke produk contoh | ✅ |
-
-**Kenapa perlu tabel sendiri?** Sampai v1, detail produk hanya ada di kolom
-`specs` berupa JSON bebas. Bagus untuk ditampilkan, tapi tidak bisa
-difilter — "Asetat premium", "asetat", dan "Acetate" akan jadi tiga opsi
-filter berbeda untuk barang yang sama. Dengan v2, admin **memilih** dari
-daftar, bukan mengetik. Kolom `specs` tetap ada dan tidak berubah.
-
-Opsi filter baru bisa ditambah kapan saja lewat **/admin/atribut** tanpa
-perlu menjalankan SQL lagi.
-
 ### Setelah SQL selesai
 
-1. **Project Settings → API** — salin `Project URL` dan `anon public key`
-   ke `.env.local` di root proyek:
+1. **Project Settings → API** — salin `Project URL` dan `Publishable key`
+   (atau `anon public key` di proyek lama) ke `.env.local` di root proyek:
 
    ```
    NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbG...
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
    ```
 
 2. **Authentication → Users → Add user** — buat akun untuk login admin.
@@ -83,6 +72,39 @@ perlu menjalankan SQL lagi.
    ```
 
 4. Restart `npm run dev`, lalu buka `/admin/login`.
+
+## Riwayat versi (v1 + v2)
+
+<details>
+<summary>Buka kalau perlu menjalankan v1/v2 secara terpisah</summary>
+
+### v1 — skema awal
+
+| # | File | Isi | Wajib? |
+| - | ---- | --- | ------ |
+| 1 | [`v1/01_schema.sql`](v1/01_schema.sql) | Tabel, index, trigger, fungsi `is_admin()` | ✅ |
+| 2 | [`v1/02_rls.sql`](v1/02_rls.sql) | Row Level Security + policy | ✅ |
+| 3 | [`v1/03_storage.sql`](v1/03_storage.sql) | Bucket `product-images` untuk foto produk | ✅ |
+| 4 | [`v1/04_seed.sql`](v1/04_seed.sql) | 6 kategori + 18 produk contoh | opsional |
+| — | [`v1/99_reset.sql`](v1/99_reset.sql) | ⚠️ Hapus semua, untuk mulai dari nol | jangan disentuh |
+
+### v2 — atribut filter
+
+| # | File | Isi | Wajib? |
+| - | ---- | --- | ------ |
+| 1 | [`v2/01_attributes.sql`](v2/01_attributes.sql) | Tabel atribut, relasi ke produk, kolom lebar lensa, RLS | ✅ |
+| 2 | [`v2/02_seed_attributes.sql`](v2/02_seed_attributes.sql) | Daftar bentuk/material/warna + pemasangan ke produk contoh | ✅ |
+
+</details>
+
+**Kenapa atribut perlu tabel sendiri?** Sampai v1, detail produk hanya ada
+di kolom `specs` berupa JSON bebas. Bagus untuk ditampilkan, tapi tidak
+bisa difilter — "Asetat premium", "asetat", dan "Acetate" akan jadi tiga
+opsi filter berbeda untuk barang yang sama. Sejak v2, admin **memilih**
+dari daftar, bukan mengetik. Kolom `specs` tetap ada dan tidak berubah.
+
+Opsi filter baru bisa ditambah kapan saja lewat **/admin/atribut** tanpa
+perlu menjalankan SQL lagi.
 
 ## Struktur data
 
@@ -106,5 +128,5 @@ perlu menjalankan SQL lagi.
 - Foto di bucket `product-images` bisa dilihat publik, tapi hanya admin yang
   boleh mengunggah atau menghapus.
 
-Karena semua aturan ada di level database, kunci `anon` yang terekspos di
+Karena semua aturan ada di level database, kunci publik yang terekspos di
 browser tidak bisa dipakai untuk mengubah data.
