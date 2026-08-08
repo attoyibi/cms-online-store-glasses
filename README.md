@@ -83,25 +83,22 @@ npm run deploy
 
 ### Lewat Workers Builds (deploy otomatis dari GitHub)
 
-Di Cloudflare Dashboard → Workers & Pages → project → Settings → Build,
-**ganti build command menjadi:**
+Tidak ada yang perlu diubah — biarkan build command `npm run build` dan
+deploy command `npx wrangler deploy` sesuai bawaannya.
 
-```
-npm run build:cf
-```
-
-Ini wajib. Nilai bawaannya `npm run build`, yang hanya menjalankan
-`next build` dan tidak menghasilkan folder `.open-next/`. Akibatnya
-tahap deploy gagal dengan pesan:
+Supaya itu bisa terjadi, `build` sengaja menunjuk ke
+`opennextjs-cloudflare build`, bukan `next build`. Perintah itulah yang
+menghasilkan folder `.open-next/` berisi bundle Worker; tanpanya tahap
+deploy gagal dengan:
 
 > Could not find compiled Open Next config, did you run the build command?
 
-Deploy command-nya biarkan `npx wrangler deploy` — wrangler otomatis
-mengenali proyek OpenNext dan meneruskannya.
-
-> **Jangan** membuat script `build` memanggil `opennextjs-cloudflare build`.
-> Perintah itu menjalankan `npm run build` di dalamnya untuk membangun
-> aplikasi Next.js, jadi hasilnya rekursi tanpa henti.
+> **Jangan hapus `buildCommand` di `open-next.config.ts`.**
+> Bawaannya OpenNext menjalankan `npm run build` untuk membangun aplikasi
+> Next.js. Karena script `build` justru memanggil OpenNext, tanpa baris
+> itu perintahnya akan memanggil dirinya sendiri tanpa henti — build
+> menggantung sampai kehabisan proses. `buildCommand: "npx next build"`
+> yang memutus rantai tersebut.
 
 ### Variabel lingkungan
 
@@ -121,8 +118,8 @@ Set di Dashboard → Settings → Variables sebelum deploy pertama:
 | Perintah             | Kegunaan                                          |
 | -------------------- | ------------------------------------------------- |
 | `npm run dev`        | Server pengembangan                               |
-| `npm run build`      | Build Next.js biasa (dipakai internal oleh `build:cf`) |
-| `npm run build:cf`   | Build + bundle Worker Cloudflare ke `.open-next/` |
+| `npm run build`      | Build + bundle Worker Cloudflare ke `.open-next/`  |
+| `npm run build:next` | Hanya `next build`, untuk pengecekan cepat        |
 | `npm run lint`       | ESLint                                            |
 | `npm run typecheck`  | `tsc --noEmit`                                    |
 | `npm run deploy`     | Build + deploy ke Cloudflare Workers              |
