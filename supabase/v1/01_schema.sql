@@ -107,7 +107,7 @@ create index if not exists products_featured_idx
 create table if not exists public.store_settings (
   id              uuid primary key default gen_random_uuid(),
   store_name      text not null default 'Lensara',
-  whatsapp_number text not null default '6281234567890',
+  whatsapp_number text not null default '6289679165530',
   address         text,
   email           text,
   instagram_url   text,
@@ -124,7 +124,7 @@ create unique index if not exists store_settings_singleton_idx
 insert into public.store_settings
   (store_name, whatsapp_number, address, email, open_hours)
 select 'Lensara',
-       '6281234567890',
+       '6289679165530',
        'Jl. Kaliurang KM 5, Sleman, Daerah Istimewa Yogyakarta',
        'halo@lensara.id',
        'Setiap hari, 09.00 - 21.00 WIB'

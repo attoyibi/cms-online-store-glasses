@@ -67,7 +67,7 @@ export function SettingsForm({ settings }: { settings: StoreSettings }) {
           name="whatsapp_number"
           required
           defaultValue={settings.whatsapp_number}
-          placeholder="6281234567890"
+          placeholder="6289679165530"
         />
         <p className="text-xs text-muted-foreground">
           Boleh ditulis 08xx, 62xx, atau +62 — sistem menormalkan sendiri.
