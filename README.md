@@ -74,16 +74,41 @@ Penjelasan tiap file SQL dan aturan penambahan versi ada di
 
 ## Deploy ke Cloudflare
 
+### Dari komputer sendiri
+
 ```bash
 npx wrangler login
 npm run deploy
 ```
 
-Sebelum deploy pertama, set variabel di Cloudflare Dashboard →
-Workers & Pages → project → Settings → Variables:
+### Lewat Workers Builds (deploy otomatis dari GitHub)
+
+Di Cloudflare Dashboard → Workers & Pages → project → Settings → Build,
+**ganti build command menjadi:**
+
+```
+npm run build:cf
+```
+
+Ini wajib. Nilai bawaannya `npm run build`, yang hanya menjalankan
+`next build` dan tidak menghasilkan folder `.open-next/`. Akibatnya
+tahap deploy gagal dengan pesan:
+
+> Could not find compiled Open Next config, did you run the build command?
+
+Deploy command-nya biarkan `npx wrangler deploy` — wrangler otomatis
+mengenali proyek OpenNext dan meneruskannya.
+
+> **Jangan** membuat script `build` memanggil `opennextjs-cloudflare build`.
+> Perintah itu menjalankan `npm run build` di dalamnya untuk membangun
+> aplikasi Next.js, jadi hasilnya rekursi tanpa henti.
+
+### Variabel lingkungan
+
+Set di Dashboard → Settings → Variables sebelum deploy pertama:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `NEXT_PUBLIC_WHATSAPP_NUMBER`
 - `NEXT_PUBLIC_SITE_URL`
 
@@ -96,7 +121,8 @@ Workers & Pages → project → Settings → Variables:
 | Perintah             | Kegunaan                                          |
 | -------------------- | ------------------------------------------------- |
 | `npm run dev`        | Server pengembangan                               |
-| `npm run build`      | Build produksi                                    |
+| `npm run build`      | Build Next.js biasa (dipakai internal oleh `build:cf`) |
+| `npm run build:cf`   | Build + bundle Worker Cloudflare ke `.open-next/` |
 | `npm run lint`       | ESLint                                            |
 | `npm run typecheck`  | `tsc --noEmit`                                    |
 | `npm run deploy`     | Build + deploy ke Cloudflare Workers              |
