@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { WhatsAppButton } from "@/components/whatsapp-button";
 import { getProductBySlug, getRelatedProducts } from "@/lib/data/queries";
 import { discountPercent, formatPrice } from "@/lib/format";
+import { jsonLdString, productJsonLd } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
 
 export async function generateMetadata(
@@ -47,6 +48,10 @@ export default async function ProductDetailPage(
 
   return (
     <div className="container-page py-8 sm:py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdString(productJsonLd(product)) }}
+      />
       <nav aria-label="Breadcrumb" className="mb-7">
         <ol className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
           <li>
