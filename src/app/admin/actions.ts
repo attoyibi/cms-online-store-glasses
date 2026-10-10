@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { slugify } from "@/lib/format";
 import { requireAdmin } from "@/lib/supabase/admin";
+import { isSchemaMissing } from "@/lib/supabase/env";
 import { describeAuthError, describeError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
 
@@ -71,9 +72,73 @@ function parseSpecs(raw: string): Record<string, string> {
   return specs;
 }
 
+type VariantInput = {
+  label: string;
+  price: number;
+  compare_at_price: number | null;
+  stock: number;
+  sort_order: number;
+};
+
+/**
+ * Satu varian per baris: `Label | harga | stok | harga coret`.
+ * Stok dan harga coret boleh dikosongkan. Baris kosong diabaikan.
+ */
+function parseVariants(raw: string): {
+  variants: VariantInput[];
+  error: string | null;
+} {
+  const variants: VariantInput[] = [];
+  const seen = new Set<string>();
+  const lines = raw.split("\n");
+
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index].trim();
+    if (!line) continue;
+
+    const [labelRaw, priceRaw, stockRaw, compareRaw] = line
+      .split("|")
+      .map((part) => part.trim());
+    const label = labelRaw ?? "";
+    const price = toNumber(priceRaw ?? null);
+    const stock = toNumber(stockRaw ?? null) ?? 0;
+    const compareAt = toNumber(compareRaw ?? null);
+    const where = `Baris varian ${index + 1} ("${label || line}")`;
+
+    if (!label) return { variants, error: `${where}: label wajib diisi.` };
+    if (!price || price <= 0) {
+      return {
+        variants,
+        error: `${where}: harga wajib diisi, format: Label | harga | stok.`,
+      };
+    }
+    if (compareAt !== null && compareAt <= price) {
+      return {
+        variants,
+        error: `${where}: harga coret harus lebih besar dari harga jual.`,
+      };
+    }
+    if (seen.has(label.toLowerCase())) {
+      return { variants, error: `${where}: label sudah dipakai di baris lain.` };
+    }
+    seen.add(label.toLowerCase());
+
+    variants.push({
+      label,
+      price,
+      compare_at_price: compareAt,
+      stock,
+      sort_order: variants.length + 1,
+    });
+  }
+
+  return { variants, error: null };
+}
+
 function productPayload(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const slugInput = String(formData.get("slug") ?? "").trim();
+  const { variants } = parseVariants(String(formData.get("variants") ?? ""));
   const price = toNumber(formData.get("price"));
   const compareAt = toNumber(formData.get("compare_at_price"));
 
@@ -87,9 +152,16 @@ function productPayload(formData: FormData) {
     slug: slugInput ? slugify(slugInput) : slugify(name),
     brand: String(formData.get("brand") ?? "").trim() || null,
     description: String(formData.get("description") ?? "").trim() || null,
-    price: price ?? 0,
-    compare_at_price: compareAt,
-    stock: toNumber(formData.get("stock")) ?? 0,
+    // Produk bervarian: harga = termurah, stok = total. Nilai dari kolom
+    // harga/stok di form diabaikan supaya katalog (urut & filter harga)
+    // tidak menyimpang dari varian.
+    price: variants.length
+      ? Math.min(...variants.map((v) => v.price))
+      : (price ?? 0),
+    compare_at_price: variants.length ? null : compareAt,
+    stock: variants.length
+      ? variants.reduce((sum, v) => sum + v.stock, 0)
+      : (toNumber(formData.get("stock")) ?? 0),
     images,
     category_id: String(formData.get("category_id") ?? "") || null,
     is_active: formData.get("is_active") === "on",
@@ -137,6 +209,55 @@ async function syncAttributes(
     : null;
 }
 
+/**
+ * Samakan varian di database dengan isi form: tambah/ubah dulu, baru
+ * hapus yang sudah tidak ada. Urutan ini disengaja — bila penyimpanan
+ * gagal di tengah jalan, varian lama tidak hilang.
+ */
+async function syncVariants(
+  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  productId: string,
+  variants: VariantInput[],
+): Promise<string | null> {
+  const { data: existing, error: readError } = await supabase
+    .from("product_variants")
+    .select("id, label")
+    .eq("product_id", productId);
+
+  if (readError) {
+    if (!isSchemaMissing(readError)) {
+      return describeError(readError, "Produk tersimpan, tapi varian gagal");
+    }
+    // Tabelnya belum ada — migrasi v4 belum dijalankan
+    return variants.length
+      ? "Produk tersimpan, tapi varian belum bisa disimpan: jalankan supabase/v4/01_variants.sql di SQL Editor dulu."
+      : null;
+  }
+
+  if (variants.length > 0) {
+    const { error } = await supabase.from("product_variants").upsert(
+      variants.map((variant) => ({ ...variant, product_id: productId })),
+      { onConflict: "product_id,label" },
+    );
+    if (error) return describeError(error, "Produk tersimpan, tapi varian gagal");
+  }
+
+  const keep = new Set(variants.map((variant) => variant.label));
+  const staleIds = ((existing ?? []) as { id: string; label: string }[])
+    .filter((row) => !keep.has(row.label))
+    .map((row) => row.id);
+
+  if (staleIds.length > 0) {
+    const { error } = await supabase
+      .from("product_variants")
+      .delete()
+      .in("id", staleIds);
+    if (error) return describeError(error, "Varian lama gagal dihapus");
+  }
+
+  return null;
+}
+
 function validateProduct(
   payload: ReturnType<typeof productPayload>,
 ): string | null {
@@ -155,6 +276,8 @@ export async function createProduct(
 ): Promise<ActionState> {
   const { supabase } = await requireAdmin();
   const payload = productPayload(formData);
+  const parsedVariants = parseVariants(String(formData.get("variants") ?? ""));
+  if (parsedVariants.error) return { error: parsedVariants.error };
 
   const invalid = validateProduct(payload);
   if (invalid) return { error: invalid };
@@ -181,6 +304,13 @@ export async function createProduct(
   );
   if (attributeError) return { error: attributeError };
 
+  const variantError = await syncVariants(
+    supabase,
+    data.id as string,
+    parsedVariants.variants,
+  );
+  if (variantError) return { error: variantError };
+
   revalidateShop();
   redirect("/admin/produk");
 }
@@ -194,6 +324,9 @@ export async function updateProduct(
   if (!id) return { error: "Produk tidak ditemukan." };
 
   const payload = productPayload(formData);
+  const parsedVariants = parseVariants(String(formData.get("variants") ?? ""));
+  if (parsedVariants.error) return { error: parsedVariants.error };
+
   const invalid = validateProduct(payload);
   if (invalid) return { error: invalid };
 
@@ -217,6 +350,9 @@ export async function updateProduct(
     attributeIds(formData),
   );
   if (attributeError) return { error: attributeError };
+
+  const variantError = await syncVariants(supabase, id, parsedVariants.variants);
+  if (variantError) return { error: variantError };
 
   revalidateShop();
   redirect("/admin/produk");

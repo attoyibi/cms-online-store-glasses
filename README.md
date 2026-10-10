@@ -24,13 +24,16 @@ lewat halaman `/admin` yang dilindungi login.
 - Katalog dengan pencarian, pengurutan, dan filter (state ada di URL, bisa dibagikan)
 - Filter bentuk frame yang visual — ikon kacamata, bukan daftar centang
 - Halaman kategori dan detail produk lengkap dengan spesifikasi
-- Keranjang yang bertahan di `localStorage` dan sinkron antar tab
+- Varian produk dengan harga & stok per pilihan (mis. ukuran lensa), tampil sebagai rentang harga
+- Keranjang yang bertahan di `localStorage` dan sinkron antar tab; varian berbeda = baris berbeda
+- "Terakhir Anda lihat" di halaman produk, tersimpan di perangkat pengunjung
+- Kategori kosong menampilkan keterangan jelas, lalu rekomendasi yang diberi label terpisah
 - Checkout → menyusun rincian pesanan menjadi pesan WhatsApp
 
 **Untuk admin (perlu login)**
 
 - Ringkasan: jumlah produk, kategori, dan daftar stok menipis
-- CRUD produk — termasuk unggah gambar ke Supabase Storage, harga coret, dan spesifikasi bebas
+- CRUD produk — termasuk unggah gambar ke Supabase Storage, harga coret, spesifikasi bebas, dan varian
 - CRUD kategori dengan pengaturan urutan tampil
 - Kelola opsi filter (bentuk, material, warna) tanpa perlu menyentuh SQL
 - Pengaturan toko: nama, nomor WhatsApp, alamat, jam buka, dan bar pengumuman
@@ -54,7 +57,9 @@ Tanpa kredensial Supabase, situs tetap jalan memakai data contoh di
 2. SQL Editor → jalankan `supabase/v3/01_schema.sql`, lalu
    `supabase/v3/02_seed.sql` (opsional — isinya data contoh). Dua file itu
    sudah mencakup semuanya; detail dan riwayat versinya ada di
-   [`supabase/README.md`](supabase/README.md).
+   [`supabase/README.md`](supabase/README.md). Untuk **varian produk** dan
+   kategori Lap Kacamata, lanjutkan dengan `supabase/v4/01_variants.sql`
+   (dan `02_seed_lap_lensa.sql` bila ingin data contoh).
 3. Salin `.env.example` menjadi `.env.local`, isi `NEXT_PUBLIC_SUPABASE_URL` dan
    `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (Project Settings → API).
 4. Authentication → Users → **Add user**, buat akun admin.

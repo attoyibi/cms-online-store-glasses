@@ -16,6 +16,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { formatPrice } from "@/lib/format";
+import { lineId } from "@/lib/variants";
 import { buildOrderMessage, waLink } from "@/lib/whatsapp";
 
 export function CartSheet() {
@@ -61,7 +62,7 @@ export function CartSheet() {
           <>
             <ul className="flex-1 divide-y overflow-y-auto px-5">
               {items.map((item) => (
-                <li key={item.productId} className="flex gap-3.5 py-4">
+                <li key={lineId(item)} className="flex gap-3.5 py-4">
                   <Link
                     href={`/produk/${item.slug}`}
                     onClick={() => setOpen(false)}
@@ -87,6 +88,11 @@ export function CartSheet() {
                     >
                       {item.name}
                     </Link>
+                    {item.variantLabel && (
+                      <p className="-mt-1 text-xs text-muted-foreground">
+                        {item.variantLabel}
+                      </p>
+                    )}
                     <p className="text-sm font-semibold tabular-nums">
                       {formatPrice(item.price * item.quantity)}
                     </p>
@@ -96,7 +102,7 @@ export function CartSheet() {
                         <button
                           type="button"
                           onClick={() =>
-                            setQuantity(item.productId, item.quantity - 1)
+                            setQuantity(lineId(item), item.quantity - 1)
                           }
                           className="flex size-8 items-center justify-center rounded-l-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                           aria-label={`Kurangi jumlah ${item.name}`}
@@ -109,7 +115,7 @@ export function CartSheet() {
                         <button
                           type="button"
                           onClick={() =>
-                            setQuantity(item.productId, item.quantity + 1)
+                            setQuantity(lineId(item), item.quantity + 1)
                           }
                           className="flex size-8 items-center justify-center rounded-r-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                           aria-label={`Tambah jumlah ${item.name}`}
@@ -120,7 +126,7 @@ export function CartSheet() {
 
                       <button
                         type="button"
-                        onClick={() => remove(item.productId)}
+                        onClick={() => remove(lineId(item))}
                         className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                         aria-label={`Hapus ${item.name} dari keranjang`}
                       >

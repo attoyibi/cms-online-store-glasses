@@ -12,16 +12,22 @@ import {
   type Facets,
 } from "@/lib/filters";
 import { siteConfig } from "@/lib/site-config";
+import { withVariantSummary } from "@/lib/variants";
 import { isSchemaMissing } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import type {
   Category,
   Product,
   ProductAttribute,
+  ProductVariant,
   StoreSettings,
 } from "@/lib/types";
 
-/** Select lengkap, termasuk atribut filter dari migrasi v2 */
+/** Select terlengkap: atribut filter (v2) + varian (v4) */
+const PRODUCT_SELECT_VARIANTS =
+  "*, category:categories(id, slug, name), links:product_attribute_links(attribute:product_attributes(*)), variants:product_variants(*)";
+
+/** Tanpa varian — dipakai bila migrasi v4 belum dijalankan */
 const PRODUCT_SELECT_FULL =
   "*, category:categories(id, slug, name), links:product_attribute_links(attribute:product_attributes(*))";
 
@@ -47,22 +53,26 @@ const SORT_COLUMN: Record<ProductSort, { column: string; ascending: boolean }> =
   };
 
 /** Bentuk baris mentah dari Supabase sebelum atributnya diratakan */
-type RawProduct = Omit<Product, "attributes"> & {
+type RawProduct = Omit<Product, "attributes" | "variants"> & {
   links?: { attribute: ProductAttribute | null }[] | null;
   attributes?: ProductAttribute[];
+  variants?: ProductVariant[] | null;
 };
 
 /** Ratakan hasil join many-to-many menjadi array atribut biasa */
 function normalize(rows: RawProduct[]): Product[] {
   return rows.map((row) => {
-    const { links, ...rest } = row;
-    return {
-      ...rest,
-      lens_width_mm: rest.lens_width_mm ?? null,
-      attributes: (links ?? [])
-        .map((link) => link.attribute)
-        .filter((a): a is ProductAttribute => Boolean(a)),
-    };
+    const { links, variants, ...rest } = row;
+    return withVariantSummary(
+      {
+        ...rest,
+        lens_width_mm: rest.lens_width_mm ?? null,
+        attributes: (links ?? [])
+          .map((link) => link.attribute)
+          .filter((a): a is ProductAttribute => Boolean(a)),
+      },
+      variants ?? [],
+    );
   });
 }
 
@@ -197,7 +207,10 @@ export async function getProducts(query: ProductQuery = {}): Promise<Product[]> 
     return builder;
   };
 
-  let { data, error } = await run(PRODUCT_SELECT_FULL);
+  let { data, error } = await run(PRODUCT_SELECT_VARIANTS);
+
+  // Migrasi v4 belum dijalankan — ulangi tanpa join varian.
+  if (error) ({ data, error } = await run(PRODUCT_SELECT_FULL));
 
   // Migrasi v2 belum dijalankan — ulangi tanpa join atribut supaya
   // katalog tetap tampil, hanya tanpa filter.
@@ -270,7 +283,8 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
       .eq("is_active", true)
       .maybeSingle();
 
-  let { data, error } = await run(PRODUCT_SELECT_FULL);
+  let { data, error } = await run(PRODUCT_SELECT_VARIANTS);
+  if (error) ({ data, error } = await run(PRODUCT_SELECT_FULL));
   if (error) ({ data, error } = await run(PRODUCT_SELECT_BASIC));
 
   if (isSchemaMissing(error)) return fromSample();

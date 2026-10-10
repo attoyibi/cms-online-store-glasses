@@ -48,6 +48,14 @@ export function ProductForm({
     {},
   );
 
+  const variantsText = (product?.variants ?? [])
+    .map((v) =>
+      [v.label, v.price, v.stock, v.compare_at_price ?? ""]
+        .join(" | ")
+        .replace(/( \| )+$/, ""),
+    )
+    .join("\n");
+
   const specsText = product
     ? Object.entries(product.specs)
         .map(([key, value]) => `${key}: ${value}`)
@@ -147,13 +155,12 @@ export function ProductForm({
 
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="space-y-2">
-            <Label htmlFor="price">Harga jual (Rp) *</Label>
+            <Label htmlFor="price">Harga jual (Rp)</Label>
             <Input
               id="price"
               name="price"
               inputMode="numeric"
-              required
-              defaultValue={product?.price}
+              defaultValue={product?.variants.length ? "" : product?.price}
               placeholder="385000"
             />
           </div>
@@ -179,6 +186,30 @@ export function ProductForm({
               placeholder="0"
             />
           </div>
+        </div>
+
+        <div className="space-y-2 rounded-xl border bg-muted/30 p-4">
+          <Label htmlFor="variants">Varian (opsional)</Label>
+          <textarea
+            id="variants"
+            name="variants"
+            rows={5}
+            defaultValue={variantsText}
+            placeholder={
+              "Minus 0,25 – 4,00 | 250000 | 40\nMinus 4,25 – 6,00 | 350000 | 25\nMinus 6,25 – 8,00 | 450000 | 10 | 500000"
+            }
+            className={`${textareaClass} font-mono text-xs`}
+          />
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Untuk produk yang harganya bergantung pilihan, mis. ukuran lensa.
+            Satu baris per varian:{" "}
+            <code className="font-mono">Label | harga | stok | harga coret</code>{" "}
+            (stok dan harga coret boleh dikosongkan). Bila diisi,{" "}
+            <strong>kolom harga, harga coret, dan stok di atas diabaikan</strong>{" "}
+            — harga tampil sebagai &ldquo;mulai dari&rdquo; yang termurah, stok
+            dijumlahkan. Butuh tabel varian dari{" "}
+            <code className="font-mono">supabase/v4</code>.
+          </p>
         </div>
       </fieldset>
 

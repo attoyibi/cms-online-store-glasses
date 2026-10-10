@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatPrice } from "@/lib/format";
+import { lineId } from "@/lib/variants";
 import { buildOrderMessage, waLink, type CheckoutDetails } from "@/lib/whatsapp";
 
 type Errors = Partial<Record<keyof CheckoutDetails, string>>;
@@ -193,7 +194,7 @@ export function CheckoutForm() {
 
         <ul className="mt-4 divide-y">
           {items.map((item) => (
-            <li key={item.productId} className="flex gap-3 py-3">
+            <li key={lineId(item)} className="flex gap-3 py-3">
               <div className="relative size-14 shrink-0 overflow-hidden rounded-lg border bg-muted">
                 {item.image && (
                   <Image
@@ -208,6 +209,11 @@ export function CheckoutForm() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="line-clamp-2 text-sm font-medium">{item.name}</p>
+                {item.variantLabel && (
+                  <p className="text-xs text-muted-foreground">
+                    {item.variantLabel}
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground tabular-nums">
                   {item.quantity} × {formatPrice(item.price)}
                 </p>

@@ -107,6 +107,15 @@ const shapes = {
       stroke-width="16" stroke-linecap="round" opacity="0.85" />
     <path d="M 292 ${CY + 60} A 132 132 0 0 0 348 ${CY + 118}" fill="none"
       stroke-width="10" stroke-linecap="round" opacity="0.5" />`,
+
+  /** Untuk "Lap Kacamata": kain microfiber terlipat dengan garis lipatan */
+  cloth: (t) => `
+    <rect x="212" y="${CY - 150}" width="376" height="300" rx="26" fill="${t.lens}" />
+    <path d="M 212 ${CY - 40} L 588 ${CY - 40}" fill="none" stroke-width="8" opacity="0.45" />
+    <path d="M 212 ${CY + 60} L 588 ${CY + 60}" fill="none" stroke-width="8" opacity="0.3" />
+    <path d="M 400 ${CY - 150} L 400 ${CY + 150}" fill="none" stroke-width="8" opacity="0.3" />
+    <path d="M 252 ${CY - 108} L 316 ${CY - 108}" fill="none" stroke-width="10"
+      stroke-linecap="round" opacity="0.7" />`,
 };
 
 function svg(shapeName, toneName) {
@@ -142,6 +151,8 @@ const combos = [
   ["square", "amber"],
   ["lens", "jade"],
   ["lens", "slate"],
+  ["cloth", "jade"],
+  ["cloth", "sand"],
 ];
 
 for (const [shape, tone] of combos) {

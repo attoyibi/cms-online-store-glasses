@@ -36,7 +36,7 @@ export function buildOrderMessage(
     ...items.map((item, index) => {
       const subtotal = item.price * item.quantity;
       return [
-        `${index + 1}. ${item.name}`,
+        `${index + 1}. ${item.name}${item.variantLabel ? ` (${item.variantLabel})` : ""}`,
         `   ${item.quantity} x ${formatPrice(item.price)} = ${formatPrice(subtotal)}`,
       ].join("\n");
     }),
