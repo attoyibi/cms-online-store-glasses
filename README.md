@@ -4,6 +4,8 @@ Toko kacamata online dengan CMS. Pengunjung memilih produk lalu mengirim pesanan
 lewat WhatsApp — **tidak ada pembayaran di dalam situs**. Admin mengelola katalog
 lewat halaman `/admin` yang dilindungi login.
 
+**Demo langsung:** https://cms-online-store-glasses.muhammadmuchson.workers.dev/
+
 ## Stack
 
 | Bagian      | Teknologi                                              |
