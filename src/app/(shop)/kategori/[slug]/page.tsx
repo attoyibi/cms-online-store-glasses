@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { CategoryPills } from "@/components/catalog/category-pills";
+import { EmptyCategory } from "@/components/catalog/empty-category";
 import { FilterBar } from "@/components/catalog/filter-bar";
 import { ProductGrid } from "@/components/catalog/product-grid";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,6 +11,7 @@ import {
   getCatalog,
   getCategories,
   getCategoryBySlug,
+  getRecommendedProducts,
   type ProductSort,
 } from "@/lib/data/queries";
 import { parseFilters } from "@/lib/filters";
@@ -63,6 +65,10 @@ export default async function CategoryPage(
     }),
   ]);
 
+  // Kategori yang benar-benar kosong — beda dari "ada isi tapi tersaring habis"
+  const isEmptyCategory = catalog.totalBeforeFilters === 0 && !search;
+  const recommended = isEmptyCategory ? await getRecommendedProducts(8) : [];
+
   return (
     <div className="container-page py-10 sm:py-14">
       <header className="max-w-2xl space-y-3">
@@ -77,18 +83,24 @@ export default async function CategoryPage(
       <div className="mt-8 space-y-5">
         <CategoryPills categories={categories} activeSlug={slug} />
 
-        <Suspense fallback={<Skeleton className="h-40 w-full rounded-xl" />}>
-          <FilterBar
-            basePath={`/kategori/${slug}`}
-            facets={catalog.facets}
-            total={catalog.products.length}
-            totalBeforeFilters={catalog.totalBeforeFilters}
-          />
-        </Suspense>
+        {!isEmptyCategory && (
+          <Suspense fallback={<Skeleton className="h-40 w-full rounded-xl" />}>
+            <FilterBar
+              basePath={`/kategori/${slug}`}
+              facets={catalog.facets}
+              total={catalog.products.length}
+              totalBeforeFilters={catalog.totalBeforeFilters}
+            />
+          </Suspense>
+        )}
       </div>
 
       <div className="mt-9">
-        <ProductGrid products={catalog.products} />
+        {isEmptyCategory ? (
+          <EmptyCategory categoryName={category.name} recommended={recommended} />
+        ) : (
+          <ProductGrid products={catalog.products} />
+        )}
       </div>
     </div>
   );

@@ -169,10 +169,21 @@ export async function getProducts(query: ProductQuery = {}): Promise<Product[]> 
 
   if (!supabase) return sampleProductList(query);
 
+  // Saring lewat kolom category_id milik produk itu sendiri. Jangan pakai
+  // `.eq("categories.slug", …)`: pada PostgREST filter atas tabel yang
+  // di-embed hanya mengosongkan kolom kategorinya, tidak membuang baris
+  // produk — akibatnya setiap halaman kategori menampilkan SEMUA produk.
+  let categoryId: string | null = null;
+  if (categorySlug) {
+    const category = await getCategoryBySlug(categorySlug);
+    if (!category) return [];
+    categoryId = category.id;
+  }
+
   const run = async (select: string) => {
     let builder = supabase.from("products").select(select).eq("is_active", true);
 
-    if (categorySlug) builder = builder.eq("categories.slug", categorySlug);
+    if (categoryId) builder = builder.eq("category_id", categoryId);
     if (featuredOnly) builder = builder.eq("is_featured", true);
     if (search?.trim()) {
       const needle = `%${search.trim()}%`;
@@ -197,6 +208,19 @@ export async function getProducts(query: ProductQuery = {}): Promise<Product[]> 
 
   if (error || !data) return [];
   return normalize(data as unknown as RawProduct[]);
+}
+
+/**
+ * Produk unggulan, dilengkapi yang terbaru bila kurang. Dipakai untuk
+ * mengisi halaman yang hasilnya kosong supaya pengunjung tidak buntu.
+ */
+export async function getRecommendedProducts(limit = 8): Promise<Product[]> {
+  const featured = await getProducts({ featuredOnly: true, limit });
+  if (featured.length >= limit) return featured;
+
+  const latest = await getProducts({ limit: limit * 2 });
+  const seen = new Set(featured.map((product) => product.id));
+  return [...featured, ...latest.filter((p) => !seen.has(p.id))].slice(0, limit);
 }
 
 export type CatalogResult = {
