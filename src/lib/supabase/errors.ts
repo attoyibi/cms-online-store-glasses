@@ -30,3 +30,42 @@ export function describeError(
   if (isRlsRejection(error)) return RLS_HINT;
   return `${fallbackPrefix}: ${error.message ?? "kesalahan tidak diketahui"}`;
 }
+
+/**
+ * Pesan login yang menjelaskan penyebab sebenarnya.
+ *
+ * Sebelumnya semua kegagalan dijawab "Email atau password salah", padahal
+ * Supabase membedakannya: email belum dikonfirmasi, akun diblokir, API key
+ * salah, atau koneksi gagal. Tanpa pembedaan itu, admin yang akunnya sudah
+ * dibuat manual di dashboard tidak punya petunjuk apa pun.
+ *
+ * Hanya `invalid_credentials` yang benar-benar berarti email/password salah.
+ */
+export function describeAuthError(error: {
+  message?: string;
+  code?: string;
+  status?: number;
+}): string {
+  const message = error.message?.toLowerCase() ?? "";
+
+  switch (error.code) {
+    case "invalid_credentials":
+      return "Email atau password salah.";
+    case "email_not_confirmed":
+      return "Email akun ini belum dikonfirmasi. Di Supabase: Authentication → Users → pilih user → Confirm email (atau buat ulang user dengan opsi Auto Confirm).";
+    case "user_banned":
+      return "Akun ini sedang diblokir di Supabase.";
+    case "over_request_rate_limit":
+      return "Terlalu banyak percobaan masuk. Tunggu beberapa menit lalu coba lagi.";
+  }
+
+  if (error.status === 401 || message.includes("api key")) {
+    return "Situs ditolak Supabase (API key tidak valid). Periksa NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY di Build variables, lalu deploy ulang.";
+  }
+
+  if (!error.status || error.status >= 500) {
+    return "Tidak bisa menghubungi Supabase. Periksa koneksi, atau cek apakah proyek Supabase sedang di-pause.";
+  }
+
+  return `Gagal masuk: ${error.message ?? "kesalahan tidak diketahui"}`;
+}

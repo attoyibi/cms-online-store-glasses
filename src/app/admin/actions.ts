@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { slugify } from "@/lib/format";
 import { requireAdmin } from "@/lib/supabase/admin";
-import { describeError } from "@/lib/supabase/errors";
+import { describeAuthError, describeError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
 
 export type ActionState = { error?: string; success?: string };
@@ -35,7 +35,9 @@ export async function signIn(
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
-    return { error: "Email atau password salah." };
+    // Terlihat di Workers Logs; sengaja tanpa email/password
+    console.error("[signIn]", error.code, error.status, error.message);
+    return { error: describeAuthError(error) };
   }
 
   revalidatePath("/admin", "layout");
