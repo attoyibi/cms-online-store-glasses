@@ -7,10 +7,12 @@ import { toast } from "sonner";
 import { useCart } from "@/components/cart/cart-provider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { Product } from "@/lib/types";
+import type { Product, ProductVariant } from "@/lib/types";
 
 type Props = {
   product: Pick<Product, "id" | "slug" | "name" | "price" | "images" | "stock">;
+  /** Varian yang dipilih; harga & stok-nya menggantikan milik produk */
+  option?: ProductVariant | null;
   quantity?: number;
   size?: "sm" | "default" | "lg";
   variant?: "default" | "outline" | "secondary";
@@ -22,6 +24,7 @@ type Props = {
 
 export function AddToCartButton({
   product,
+  option = null,
   quantity = 1,
   size = "default",
   variant = "default",
@@ -31,7 +34,7 @@ export function AddToCartButton({
 }: Props) {
   const { add, setOpen } = useCart();
   const [justAdded, setJustAdded] = useState(false);
-  const soldOut = product.stock <= 0;
+  const soldOut = (option?.stock ?? product.stock) <= 0;
 
   function handleClick() {
     add(
@@ -39,8 +42,10 @@ export function AddToCartButton({
         productId: product.id,
         slug: product.slug,
         name: product.name,
-        price: product.price,
+        price: option?.price ?? product.price,
         image: product.images[0] ?? null,
+        variantId: option?.id ?? null,
+        variantLabel: option?.label ?? null,
       },
       quantity,
     );
@@ -48,7 +53,9 @@ export function AddToCartButton({
     if (openCart) {
       setOpen(true);
     } else {
-      toast.success("Masuk keranjang", { description: product.name });
+      toast.success("Masuk keranjang", {
+        description: option ? `${product.name} — ${option.label}` : product.name,
+      });
     }
 
     setJustAdded(true);

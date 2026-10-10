@@ -7,10 +7,11 @@ import { DeleteButton } from "@/components/admin/delete-button";
 import { ProductForm } from "@/components/admin/product-form";
 import { loadProductFormOptions } from "@/lib/data/admin-queries";
 import { requireAdmin } from "@/lib/supabase/admin";
-import type { Product, ProductAttribute } from "@/lib/types";
+import type { Product, ProductAttribute, ProductVariant } from "@/lib/types";
 
-type RawProduct = Omit<Product, "attributes"> & {
+type RawProduct = Omit<Product, "attributes" | "variants"> & {
   links?: { attribute: ProductAttribute | null }[] | null;
+  variants?: ProductVariant[] | null;
 };
 
 export default async function EditProductPage(
@@ -19,31 +20,29 @@ export default async function EditProductPage(
   const { id } = await props.params;
   const { supabase } = await requireAdmin();
 
+  const withVariants =
+    "*, category:categories(id, slug, name), links:product_attribute_links(attribute:product_attributes(*)), variants:product_variants(*)";
   const withAttributes =
     "*, category:categories(id, slug, name), links:product_attribute_links(attribute:product_attributes(*))";
 
-  const primary = await supabase
-    .from("products")
-    .select(withAttributes)
-    .eq("id", id)
-    .maybeSingle();
+  const load = (select: string) =>
+    supabase.from("products").select(select).eq("id", id).maybeSingle();
 
-  // Ulangi tanpa join bila migrasi v2 belum dijalankan
-  const result = primary.error
-    ? await supabase
-        .from("products")
-        .select("*, category:categories(id, slug, name)")
-        .eq("id", id)
-        .maybeSingle()
-    : primary;
+  // Ulangi tanpa join varian (v4) lalu tanpa atribut (v2) bila belum dijalankan
+  let result = await load(withVariants);
+  if (result.error) result = await load(withAttributes);
+  if (result.error) result = await load("*, category:categories(id, slug, name)");
 
   const raw = result.data as unknown as RawProduct | null;
   if (!raw) notFound();
 
-  const { links, ...rest } = raw;
+  const { links, variants, ...rest } = raw;
   const product: Product = {
     ...rest,
     lens_width_mm: rest.lens_width_mm ?? null,
+    variants: [...(variants ?? [])].sort(
+      (a, b) => a.sort_order - b.sort_order || a.price - b.price,
+    ),
     attributes: (links ?? [])
       .map((link) => link.attribute)
       .filter((a): a is ProductAttribute => Boolean(a)),

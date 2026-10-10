@@ -5,14 +5,14 @@ import { ChevronRight, PackageCheck, ShieldCheck, Truck } from "lucide-react";
 
 import { ProductCard } from "@/components/product/product-card";
 import { ProductGallery } from "@/components/product/product-gallery";
-import { QuantityPicker } from "@/components/product/quantity-picker";
-import { Badge } from "@/components/ui/badge";
+import { ProductBuyBox } from "@/components/product/product-buy-box";
+import { RecentlyViewed } from "@/components/product/recently-viewed";
 import { Separator } from "@/components/ui/separator";
-import { WhatsAppButton } from "@/components/whatsapp-button";
 import { getProductBySlug, getRelatedProducts } from "@/lib/data/queries";
-import { discountPercent, formatPrice } from "@/lib/format";
+import { formatPrice } from "@/lib/format";
 import { jsonLdString, productJsonLd } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
+import { priceRange } from "@/lib/variants";
 
 export async function generateMetadata(
   props: PageProps<"/produk/[slug]">,
@@ -42,8 +42,6 @@ export default async function ProductDetailPage(
   if (!product) notFound();
 
   const related = await getRelatedProducts(product, 4);
-  const discount = discountPercent(product.price, product.compare_at_price);
-  const soldOut = product.stock <= 0;
   const specs = Object.entries(product.specs);
 
   return (
@@ -103,52 +101,18 @@ export default async function ProductDetailPage(
               {product.name}
             </h1>
 
-            <div className="flex flex-wrap items-baseline gap-3">
-              <span className="text-2xl font-semibold tabular-nums">
-                {formatPrice(product.price)}
-              </span>
-              {product.compare_at_price && (
-                <span className="text-base text-muted-foreground line-through tabular-nums">
-                  {formatPrice(product.compare_at_price)}
-                </span>
-              )}
-              {discount && <Badge variant="destructive">Hemat {discount}%</Badge>}
-            </div>
-
-            <p className="text-sm text-muted-foreground">
-              {soldOut ? (
-                <span className="text-destructive">
-                  Stok habis — tanyakan perkiraan restock lewat WhatsApp.
-                </span>
-              ) : product.stock <= 5 ? (
-                <>Tinggal {product.stock} pcs</>
-              ) : (
-                <>Stok tersedia</>
-              )}
-            </p>
           </div>
+
+          <ProductBuyBox
+            product={product}
+            url={`${siteConfig.url}/produk/${product.slug}`}
+          />
 
           {product.description && (
             <p className="text-sm leading-relaxed text-muted-foreground">
               {product.description}
             </p>
           )}
-
-          <Separator />
-
-          <div className="space-y-3">
-            <QuantityPicker product={product} />
-            <WhatsAppButton
-              size="lg"
-              className="w-full sm:w-auto"
-              message={`Halo {store}, saya tertarik dengan "${product.name}" (${formatPrice(product.price)}). Apakah stoknya masih ada?\n${siteConfig.url}/produk/${product.slug}`}
-              label="Tanya Dulu Lewat WhatsApp"
-            />
-            <p className="text-xs text-muted-foreground">
-              Pembayaran tidak diproses di situs ini. Setelah pesanan masuk,
-              kami konfirmasi stok, ongkir, dan cara bayar lewat WhatsApp.
-            </p>
-          </div>
 
           <Separator />
 
@@ -199,6 +163,16 @@ export default async function ProductDetailPage(
           </div>
         </section>
       )}
+
+      <RecentlyViewed
+        current={{
+          slug: product.slug,
+          name: product.name,
+          image: product.images[0] ?? null,
+          price: priceRange(product).min,
+          priceMax: priceRange(product).max,
+        }}
+      />
     </div>
   );
 }

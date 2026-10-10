@@ -29,6 +29,42 @@ masih kosong, jalankan `v3` saja dan lewati `v1`/`v2` sama sekali.
 kebetulan sudah terlanjur menjalankannya secara terpisah sebelum `v3`
 ada. Isinya tidak akan diubah lagi.
 
+## Sudah pakai v3? Tambahkan v4 (varian produk)
+
+`v4` menambah **varian produk**: satu produk bisa punya beberapa pilihan dengan
+harga & stok sendiri — terutama untuk lensa, yang harganya bergantung ukuran
+minus/plus. Folder ini hanya berisi perubahan dari v3, jalankan **setelah v3**:
+
+| # | File | Isi | Wajib? |
+| - | ---- | --- | ------ |
+| 1 | [`v4/01_variants.sql`](v4/01_variants.sql) | Tabel `product_variants` + RLS | ✅ untuk fitur varian |
+| 2 | [`v4/02_seed_lap_lensa.sql`](v4/02_seed_lap_lensa.sql) | Kategori & 2 produk Lap Kacamata, varian untuk 3 lensa contoh | opsional |
+
+Keduanya aman dijalankan ulang. Beberapa hal yang perlu diketahui:
+
+- **Situs tetap jalan sebelum v4 dijalankan** — produk biasa tidak terpengaruh,
+  hanya varian yang belum bisa disimpan (admin akan menampilkan pesan yang jelas).
+- Untuk produk **bervarian**, kolom `products.price` berisi harga termurah dan
+  `products.stock` jumlah stok semua varian. Halaman admin mengisinya otomatis;
+  tujuannya agar urutan harga dan filter harga di katalog tetap benar.
+- Kategori & produk di `02_seed_lap_lensa.sql` memakai `on conflict do nothing`,
+  jadi **tidak menimpa** hasil edit Anda di CMS. Kalau Anda sudah punya kategori
+  `lap-kacamata`, isinya dibiarkan.
+- Menjalankan ulang `v3/02_seed.sql` akan **mengembalikan harga** tiga produk
+  lensa ke harga lama (seed-nya meng-upsert harga). Bila itu terjadi, jalankan
+  `v4/02_seed_lap_lensa.sql` lagi — bagian terakhirnya menghitung ulang harga
+  dan stok dari varian.
+
+Cara mengisi varian dari CMS: buka **Admin → Produk → Edit**, isi kolom
+**Varian**, satu baris per varian dengan format `Label | harga | stok | harga coret`
+(stok dan harga coret boleh dikosongkan), mis.:
+
+```
+Minus 0,25 – 4,00 | 250000 | 40
+Minus 4,25 – 6,00 | 350000 | 25
+Minus 6,25 – 8,00 | 450000 | 10 | 500000
+```
+
 ## Aturan versi
 
 Setiap perubahan skema masuk ke **folder versi baru**. Folder versi lama

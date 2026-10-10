@@ -1,4 +1,10 @@
-import type { Category, Product, ProductAttribute } from "@/lib/types";
+import type {
+  Category,
+  Product,
+  ProductAttribute,
+  ProductVariant,
+} from "@/lib/types";
+import { withVariantSummary } from "@/lib/variants";
 
 /**
  * Data contoh yang dipakai selama Supabase belum dikonfigurasi.
@@ -64,6 +70,16 @@ export const sampleCategories: Category[] = [
     sort_order: 6,
     is_active: true,
   },
+  {
+    id: "cat-lap",
+    slug: "lap-kacamata",
+    name: "Lap Kacamata",
+    description:
+      "Microfiber serat halus untuk membersihkan lensa tanpa menggores.",
+    image_url: "/products/cloth-jade.svg",
+    sort_order: 7,
+    is_active: true,
+  },
 ];
 
 export const sampleAttributes: ProductAttribute[] = [
@@ -105,10 +121,19 @@ const attributeRefs = (keys: string[]): ProductAttribute[] =>
     })
     .filter((a): a is ProductAttribute => Boolean(a));
 
-type Seed = Omit<Product, "category" | "attributes"> & {
+type VariantSeed = {
+  label: string;
+  price: number;
+  compare_at_price?: number;
+  stock: number;
+};
+
+type Seed = Omit<Product, "category" | "attributes" | "variants"> & {
   category_id: string;
   /** Format "tipe:slug", boleh lebih dari satu material atau warna */
   attrs: string[];
+  /** Pilihan ukuran/jenis. `price` & `stock` produk dihitung ulang darinya. */
+  variants?: VariantSeed[];
 };
 
 const seeds: Seed[] = [
@@ -387,6 +412,13 @@ const seeds: Seed[] = [
     is_active: true,
     is_featured: true,
     attrs: [],
+    variants: [
+      { label: "Netral (tanpa minus)", price: 250000, stock: 40 },
+      { label: "Minus 0,25 – 4,00", price: 385000, compare_at_price: 450000, stock: 60 },
+      { label: "Minus 4,25 – 6,00", price: 485000, stock: 40 },
+      { label: "Minus 6,25 – 8,00", price: 625000, stock: 20 },
+      { label: "Plus 0,25 – 4,00", price: 450000, stock: 30 },
+    ],
     lens_width_mm: null,
     specs: {
       Tipe: "Single vision",
@@ -412,6 +444,11 @@ const seeds: Seed[] = [
     is_active: true,
     is_featured: false,
     attrs: [],
+    variants: [
+      { label: "Indeks 1.56", price: 1250000, stock: 25 },
+      { label: "Indeks 1.60", price: 1850000, compare_at_price: 2250000, stock: 25 },
+      { label: "Indeks 1.67", price: 2400000, stock: 10 },
+    ],
     lens_width_mm: null,
     specs: {
       Tipe: "Progresif",
@@ -437,6 +474,11 @@ const seeds: Seed[] = [
     is_active: true,
     is_featured: false,
     attrs: [],
+    variants: [
+      { label: "Netral (tanpa minus)", price: 650000, stock: 25 },
+      { label: "Minus 0,25 – 4,00", price: 975000, stock: 30 },
+      { label: "Minus 4,25 – 6,00", price: 1250000, stock: 15 },
+    ],
     lens_width_mm: null,
     specs: {
       Tipe: "Photochromic",
@@ -577,10 +619,64 @@ const seeds: Seed[] = [
     },
     created_at: "2026-07-05T04:00:00.000Z",
   },
+  {
+    id: "p-15",
+    slug: "lap-microfiber-serat-halus",
+    name: "Lap Microfiber Serat Halus",
+    brand: "Lensara Studio",
+    description:
+      "Serat super halus yang mengangkat debu, sidik jari, dan minyak tanpa meninggalkan goresan. Cuci dan pakai berulang kali.",
+    price: 15000,
+    compare_at_price: null,
+    stock: 200,
+    images: ["/products/cloth-jade.svg", "/products/cloth-sand.svg"],
+    category_id: "cat-lap",
+    is_active: true,
+    is_featured: false,
+    attrs: [],
+    lens_width_mm: null,
+    specs: { Bahan: "Microfiber", Ukuran: "15 x 15 cm", "Bisa dicuci": "Ya" },
+    created_at: "2026-08-10T04:00:00.000Z",
+  },
+  {
+    id: "p-16",
+    slug: "lap-microfiber-set-3",
+    name: "Lap Microfiber Set Isi 3",
+    brand: "Lensara Studio",
+    description:
+      "Tiga lembar sekaligus: satu untuk tas, satu untuk meja kerja, satu cadangan di kotak kacamata.",
+    price: 35000,
+    compare_at_price: 45000,
+    stock: 120,
+    images: ["/products/cloth-sand.svg", "/products/cloth-jade.svg"],
+    category_id: "cat-lap",
+    is_active: true,
+    is_featured: false,
+    attrs: [],
+    lens_width_mm: null,
+    specs: { Bahan: "Microfiber", Isi: "3 lembar", Ukuran: "15 x 15 cm" },
+    created_at: "2026-08-10T05:00:00.000Z",
+  },
 ];
 
-export const sampleProducts: Product[] = seeds.map(({ attrs, ...seed }) => ({
-  ...seed,
-  category: categoryRef(seed.category_id),
-  attributes: attributeRefs(attrs),
-}));
+export const sampleProducts: Product[] = seeds.map(
+  ({ attrs, variants = [], ...seed }) =>
+    withVariantSummary(
+      {
+        ...seed,
+        category: categoryRef(seed.category_id),
+        attributes: attributeRefs(attrs),
+      },
+      variants.map(
+        (variant, index): ProductVariant => ({
+          id: `${seed.id}-v${index + 1}`,
+          product_id: seed.id,
+          label: variant.label,
+          price: variant.price,
+          compare_at_price: variant.compare_at_price ?? null,
+          stock: variant.stock,
+          sort_order: index + 1,
+        }),
+      ),
+    ),
+);

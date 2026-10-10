@@ -1,4 +1,5 @@
 import type { CartItem } from "@/lib/types";
+import { lineId } from "@/lib/variants";
 
 const STORAGE_KEY = "lensara.cart.v1";
 
@@ -86,33 +87,35 @@ function write(next: CartItem[]) {
   emit();
 }
 
+/**
+ * Baris keranjang dikenali lewat `lineId` (produk + varian), bukan id
+ * produk saja: lensa minus 2 dan lensa minus 6 adalah dua baris berbeda
+ * dengan harga berbeda, walau produk induknya sama.
+ */
 export function addItem(item: Omit<CartItem, "quantity">, quantity = 1) {
   const current = getSnapshot();
-  const existing = current.find((i) => i.productId === item.productId);
+  const id = lineId(item);
+  const existing = current.find((i) => lineId(i) === id);
 
   write(
     existing
       ? current.map((i) =>
-          i.productId === item.productId
-            ? { ...i, quantity: i.quantity + quantity }
-            : i,
+          lineId(i) === id ? { ...i, quantity: i.quantity + quantity } : i,
         )
       : [...current, { ...item, quantity }],
   );
 }
 
-export function removeItem(productId: string) {
-  write(getSnapshot().filter((i) => i.productId !== productId));
+export function removeItem(id: string) {
+  write(getSnapshot().filter((i) => lineId(i) !== id));
 }
 
-export function setItemQuantity(productId: string, quantity: number) {
+export function setItemQuantity(id: string, quantity: number) {
   const current = getSnapshot();
   write(
     quantity <= 0
-      ? current.filter((i) => i.productId !== productId)
-      : current.map((i) =>
-          i.productId === productId ? { ...i, quantity } : i,
-        ),
+      ? current.filter((i) => lineId(i) !== id)
+      : current.map((i) => (lineId(i) === id ? { ...i, quantity } : i)),
   );
 }
 
