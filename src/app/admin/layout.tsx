@@ -27,7 +27,8 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
       </aside>
 
       <div className="flex-1 lg:h-dvh lg:overflow-y-auto">
-        <div className="mx-auto w-full max-w-5xl px-5 py-8 sm:px-8">
+        {/* Halaman yang butuh ruang lebar (editor halaman depan) menandai dirinya dengan data-admin-wide */}
+        <div className="mx-auto w-full max-w-5xl px-5 py-8 has-[[data-admin-wide]]:max-w-none sm:px-8">
           {!isRegistered && <NotRegisteredNotice email={email} />}
           {children}
         </div>
