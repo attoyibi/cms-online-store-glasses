@@ -28,6 +28,7 @@ lewat halaman `/admin` yang dilindungi login.
 - Keranjang yang bertahan di `localStorage` dan sinkron antar tab; varian berbeda = baris berbeda
 - "Terakhir Anda lihat" di halaman produk, tersimpan di perangkat pengunjung
 - Kategori kosong menampilkan keterangan jelas, lalu rekomendasi yang diberi label terpisah
+- Halaman depan tersusun dari blok yang bisa diatur admin (lihat di bawah)
 - Checkout → menyusun rincian pesanan menjadi pesan WhatsApp
 
 **Untuk admin (perlu login)**
@@ -37,6 +38,7 @@ lewat halaman `/admin` yang dilindungi login.
 - CRUD kategori dengan pengaturan urutan tampil
 - Kelola opsi filter (bentuk, material, warna) tanpa perlu menyentuh SQL
 - Pengaturan toko: nama, nomor WhatsApp, alamat, jam buka, dan bar pengumuman
+- **Halaman Depan**: halaman depan tersusun dari blok (hero, keunggulan, kategori, deretan produk, tentang, lensa, cara pesan, testimoni, FAQ, banner). Admin bisa mengedit isi tiap blok, mengubah urutan, menyembunyikan, menduplikasi, dan menambah blok baru, dengan draft, pratinjau, lalu terbitkan. Butuh `supabase/v5`
 
 ## Menjalankan secara lokal
 

@@ -5,6 +5,9 @@ import {
   sampleCategories,
   sampleProducts,
 } from "@/lib/data/sample-data";
+import { normalizeBlocks } from "@/lib/blocks/normalize";
+import { defaultHomeBlocks } from "@/lib/blocks/registry";
+import type { Block } from "@/lib/blocks/types";
 import {
   applyFilters,
   buildFacets,
@@ -345,4 +348,32 @@ export async function isSchemaReady(): Promise<boolean> {
   const { error } = await supabase.from("products").select("id").limit(1);
 
   return !isSchemaMissing(error);
+}
+
+/**
+ * Susunan halaman depan yang sedang terbit. Bila belum pernah diterbitkan,
+ * tabelnya belum ada (migrasi v5), atau Supabase belum dikonfigurasi, yang
+ * dipakai adalah susunan bawaan — yang sama persis dengan tampilan semula,
+ * jadi situs tidak pernah kosong gara-gara data halaman bermasalah.
+ */
+export async function getPublishedBlocks(): Promise<Block[]> {
+  const supabase = await createClient();
+  if (!supabase) return defaultHomeBlocks();
+
+  const { data, error } = await supabase
+    .from("site_pages")
+    .select("blocks")
+    .eq("slug", "home")
+    .maybeSingle();
+
+  if (error || !data) return defaultHomeBlocks();
+
+  const blocks = normalizeBlocks(data.blocks);
+
+  // Ada isi tapi tak satu pun valid (data rusak) — pakai bawaan, bukan halaman kosong.
+  // Daftar yang memang kosong sengaja dibiarkan kosong.
+  if (blocks.length === 0 && Array.isArray(data.blocks) && data.blocks.length > 0) {
+    return defaultHomeBlocks();
+  }
+  return blocks;
 }

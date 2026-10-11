@@ -65,6 +65,27 @@ Minus 4,25 – 6,00 | 350000 | 25
 Minus 6,25 – 8,00 | 450000 | 10 | 500000
 ```
 
+## Editor halaman depan? Tambahkan v5
+
+`v5` menyimpan susunan halaman depan yang diatur dari **Admin → Halaman Depan**
+(tambah, duplikasi, urutkan, sembunyikan blok, dan edit isinya). Jalankan **setelah v3**
+(v4 tidak wajib):
+
+| # | File | Isi | Wajib? |
+| - | ---- | --- | ------ |
+| 1 | [`v5/01_site_pages.sql`](v5/01_site_pages.sql) | Tabel `site_pages` (terbit) dan `site_page_drafts` (draft) + RLS | ✅ untuk editor |
+
+- **Situs tetap tampil normal sebelum dan sesudah v5 dijalankan.** Selama belum ada
+  baris terbit, halaman depan memakai susunan bawaan dari kode, yang sama persis
+  dengan tampilan semula. Menjalankan v5 saja **tidak mengubah apa pun** di situs.
+- Dua tabel dipisah agar **draft tidak bisa dibaca publik** — RLS bekerja per baris,
+  bukan per kolom. `site_pages` terbaca publik; `site_page_drafts` hanya admin.
+- Aman dijalankan ulang. Perubahan baru terlihat pengunjung setelah menekan
+  **Terbitkan** di editor.
+- Untuk membatalkan semua kustomisasi dan kembali ke tampilan awal: di editor tekan
+  **Kembalikan bawaan** lalu **Terbitkan**, atau hapus barisnya:
+  `delete from public.site_pages where slug = 'home';`
+
 ## Aturan versi
 
 Setiap perubahan skema masuk ke **folder versi baru**. Folder versi lama

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  LayoutTemplate,
   LogOut,
   Package,
   Settings,
@@ -17,6 +18,7 @@ import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/admin", label: "Ringkasan", icon: LayoutDashboard, exact: true },
+  { href: "/admin/halaman-depan", label: "Halaman Depan", icon: LayoutTemplate },
   { href: "/admin/produk", label: "Produk", icon: Package },
   { href: "/admin/kategori", label: "Kategori", icon: Tags },
   { href: "/admin/atribut", label: "Atribut Filter", icon: SlidersHorizontal },
