@@ -620,7 +620,7 @@ const seeds: Seed[] = [
     created_at: "2026-07-05T04:00:00.000Z",
   },
   {
-    id: "p-15",
+    id: "p-19",
     slug: "lap-microfiber-serat-halus",
     name: "Lap Microfiber Serat Halus",
     brand: "Lensara Studio",
@@ -639,7 +639,7 @@ const seeds: Seed[] = [
     created_at: "2026-08-10T04:00:00.000Z",
   },
   {
-    id: "p-16",
+    id: "p-20",
     slug: "lap-microfiber-set-3",
     name: "Lap Microfiber Set Isi 3",
     brand: "Lensara Studio",
