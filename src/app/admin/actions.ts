@@ -230,7 +230,7 @@ async function syncVariants(
     }
     // Tabelnya belum ada — migrasi v4 belum dijalankan
     return variants.length
-      ? "Produk tersimpan, tapi varian belum bisa disimpan: jalankan supabase/v4/01_variants.sql di SQL Editor dulu."
+      ? "Produk tersimpan, tapi varian belum bisa disimpan: jalankan supabase/setup.sql di SQL Editor dulu."
       : null;
   }
 

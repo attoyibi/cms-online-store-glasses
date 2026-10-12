@@ -208,7 +208,7 @@ export function ProductForm({
             <strong>kolom harga, harga coret, dan stok di atas diabaikan</strong>{" "}
             — harga tampil sebagai &ldquo;mulai dari&rdquo; yang termurah, stok
             dijumlahkan. Butuh tabel varian dari{" "}
-            <code className="font-mono">supabase/v4</code>.
+            <code className="font-mono">supabase/setup.sql</code>.
           </p>
         </div>
       </fieldset>

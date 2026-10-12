@@ -36,9 +36,9 @@ export default async function LoginPage() {
                 </a>
               </>,
               <>
-                Jalankan <code className="font-mono">supabase/v3/01_schema.sql</code>{" "}
-                lalu <code className="font-mono">supabase/v3/02_seed.sql</code> di
-                SQL Editor
+                Jalankan <code className="font-mono">supabase/setup.sql</code>{" "}
+                di SQL Editor (data contoh opsional:{" "}
+                <code className="font-mono">supabase/seed-demo.sql</code>)
               </>,
               <>
                 Salin URL dan publishable key ke{" "}
@@ -58,11 +58,11 @@ export default async function LoginPage() {
             intro="Kredensial sudah terbaca, tapi tabelnya belum dibuat. Situs publik sementara memakai data contoh. Yang perlu dijalankan di SQL Editor:"
             steps={[
               <>
-                <code className="font-mono">supabase/v3/01_schema.sql</code>
+                <code className="font-mono">supabase/setup.sql</code>
               </>,
               <>
-                <code className="font-mono">supabase/v3/02_seed.sql</code>{" "}
-                <span className="text-muted-foreground">(opsional)</span>
+                <code className="font-mono">supabase/seed-demo.sql</code>{" "}
+                <span className="text-muted-foreground">(opsional, data contoh)</span>
               </>,
             ]}
             footer="Setelah itu buat user di Authentication dan daftarkan ke tabel admins — panduannya ada di supabase/README.md."

@@ -1,19 +1,21 @@
 -- =============================================================
---  v3 · 02 · DATA CONTOH (opsional)
+--  DATA CONTOH / DEMO (opsional)
+--  CMS Toko Kacamata Online
 --
---  Menggabungkan seed kategori & produk (dari v1/04_seed.sql) dan
---  seed atribut filter (dari v2/02_seed_attributes.sql) jadi satu
---  file. Isinya sama persis dengan src/lib/data/sample-data.ts,
---  jadi tampilan situs tidak berubah saat Supabase mulai dipakai.
+--  Isi: 7 kategori, 20 produk contoh (termasuk Lap Kacamata dan tiga
+--  lensa bervarian), 20 opsi filter, dan satu baris pengaturan toko
+--  demo. Isinya sama dengan src/lib/data/sample-data.ts, jadi tampilan
+--  situs tidak berubah saat Supabase mulai dipakai.
 --
---  Jalankan setelah 01_schema.sql.
+--  Jalankan SETELAH setup.sql.
 --
---  Lewati file ini kalau Anda mau langsung mengisi produk sendiri
---  lewat halaman /admin — filternya tetap berfungsi, hanya kosong
---  sampai Anda menambahkan produk dan atributnya sendiri.
+--  Lewati file ini untuk toko sungguhan — isi produk sendiri lewat
+--  /admin. Filter tetap berfungsi, hanya kosong sampai ada produk.
 --
---  Aman dijalankan ulang — semua pakai upsert berdasarkan slug,
---  jadi tidak akan membuat duplikat.
+--  Aman dijalankan berulang: semua memakai "do nothing", jadi yang
+--  sudah ada TIDAK ditimpa. Edit Anda di CMS (harga, nama, stok)
+--  tetap aman walau file ini dijalankan lagi. Untuk menghapus data
+--  demo, hapus produk dan kategorinya dari Admin.
 -- =============================================================
 
 -- =============================================================
@@ -28,11 +30,7 @@ values
   ('sunglasses',       'Sunglasses',       'Proteksi UV400 dengan gaya yang tidak berlebihan.',           '/products/aviator-ink.svg',   4),
   ('kacamata-premium', 'Kacamata Premium', 'Titanium dan asetat Jepang untuk pemakaian jangka panjang.',  '/products/browline-jade.svg', 5),
   ('lensa',            'Lensa Kacamata',   'Single vision, progresif, blue light, hingga photochromic.',  '/products/lens-jade.svg',     6)
-on conflict (slug) do update set
-  name        = excluded.name,
-  description = excluded.description,
-  image_url   = excluded.image_url,
-  sort_order  = excluded.sort_order;
+on conflict (slug) do nothing;
 
 -- =============================================================
 --  BAGIAN B — Produk
@@ -158,18 +156,7 @@ select s.slug, s.name, s.brand, s.description, s.price, s.compare_at_price, s.st
        s.images, c.id, s.is_featured, s.lens_width_mm, s.specs, s.created_at
 from seed s
 join public.categories c on c.slug = s.category_slug
-on conflict (slug) do update set
-  name             = excluded.name,
-  brand            = excluded.brand,
-  description      = excluded.description,
-  price            = excluded.price,
-  compare_at_price = excluded.compare_at_price,
-  stock            = excluded.stock,
-  images           = excluded.images,
-  category_id      = excluded.category_id,
-  is_featured      = excluded.is_featured,
-  lens_width_mm    = excluded.lens_width_mm,
-  specs            = excluded.specs;
+on conflict (slug) do nothing;
 
 -- =============================================================
 --  BAGIAN C — Daftar pilihan atribut
@@ -202,10 +189,7 @@ values
   ('warna', 'bening',  'Bening',  '#DCE3E0', 7),
   ('warna', 'gold',    'Gold',    '#C9A24B', 8),
   ('warna', 'silver',  'Silver',  '#B9BEC2', 9)
-on conflict (type, slug) do update set
-  name       = excluded.name,
-  swatch_hex = excluded.swatch_hex,
-  sort_order = excluded.sort_order;
+on conflict (type, slug) do nothing;
 
 -- =============================================================
 --  BAGIAN D — Pasang atribut ke produk contoh
@@ -284,9 +268,104 @@ join public.product_attributes a
   on a.type = m.attr_type and a.slug = m.attr_slug
 on conflict do nothing;
 
--- Ringkasan hasil
+-- =============================================================
+--  BAGIAN E — Kategori dan produk Lap Kacamata
+-- =============================================================
+
+insert into public.categories (slug, name, description, image_url, sort_order)
+values
+  ('lap-kacamata', 'Lap Kacamata',
+   'Microfiber serat halus untuk membersihkan lensa tanpa menggores.',
+   '/products/cloth-jade.svg', 7)
+on conflict (slug) do nothing;
+
+
+insert into public.products
+  (slug, name, brand, description, price, compare_at_price, stock,
+   images, category_id, is_featured, specs)
+select s.slug, s.name, s.brand, s.description, s.price, s.compare_at_price, s.stock,
+       s.images, c.id, false, s.specs
+from (
+  values
+    ('lap-microfiber-serat-halus', 'Lap Microfiber Serat Halus', 'Lensara Studio',
+     'Serat super halus yang mengangkat debu, sidik jari, dan minyak tanpa meninggalkan goresan. Cuci dan pakai berulang kali.',
+     15000, null::integer, 200, array['/products/cloth-jade.svg','/products/cloth-sand.svg'],
+     '{"Bahan":"Microfiber","Ukuran":"15 x 15 cm","Bisa dicuci":"Ya"}'::jsonb),
+    ('lap-microfiber-set-3', 'Lap Microfiber Set Isi 3', 'Lensara Studio',
+     'Tiga lembar sekaligus: satu untuk tas, satu untuk meja kerja, satu cadangan di kotak kacamata.',
+     35000, 45000, 120, array['/products/cloth-sand.svg','/products/cloth-jade.svg'],
+     '{"Bahan":"Microfiber","Isi":"3 lembar","Ukuran":"15 x 15 cm"}'::jsonb)
+) as s(slug, name, brand, description, price, compare_at_price, stock, images, specs)
+join public.categories c on c.slug = 'lap-kacamata'
+on conflict (slug) do nothing;
+
+-- =============================================================
+--  BAGIAN F — Varian untuk tiga lensa contoh
+-- =============================================================
+
+with seed(product_slug, label, price, compare_at_price, stock, sort_order) as (
+  values
+    ('lensa-blue-light-single-vision', 'Netral (tanpa minus)',  250000, null::integer, 40, 1),
+    ('lensa-blue-light-single-vision', 'Minus 0,25 – 4,00',     385000, 450000,        60, 2),
+    ('lensa-blue-light-single-vision', 'Minus 4,25 – 6,00',     485000, null,          40, 3),
+    ('lensa-blue-light-single-vision', 'Minus 6,25 – 8,00',     625000, null,          20, 4),
+    ('lensa-blue-light-single-vision', 'Plus 0,25 – 4,00',      450000, null,          30, 5),
+
+    ('lensa-progresif-premium', 'Indeks 1.56', 1250000, null::integer, 25, 1),
+    ('lensa-progresif-premium', 'Indeks 1.60', 1850000, 2250000,       25, 2),
+    ('lensa-progresif-premium', 'Indeks 1.67', 2400000, null,          10, 3),
+
+    ('lensa-photochromic-transitions', 'Netral (tanpa minus)', 650000,  null::integer, 25, 1),
+    ('lensa-photochromic-transitions', 'Minus 0,25 – 4,00',    975000,  null,          30, 2),
+    ('lensa-photochromic-transitions', 'Minus 4,25 – 6,00',    1250000, null,          15, 3)
+)
+insert into public.product_variants
+  (product_id, label, price, compare_at_price, stock, sort_order)
+select p.id, s.label, s.price, s.compare_at_price, s.stock, s.sort_order
+from seed s
+join public.products p on p.slug = s.product_slug
+on conflict (product_id, label) do nothing;
+
+-- Samakan ringkasan di tabel products: harga = termurah, stok = total,
+-- harga coret dikosongkan (tiap varian punya sendiri). Hanya untuk tiga
+-- lensa demo di atas.
+update public.products p
+set price            = v.min_price,
+    stock            = v.total_stock,
+    compare_at_price = null
+from (
+  select product_id, min(price) as min_price, sum(stock)::integer as total_stock
+  from public.product_variants
+  group by product_id
+) v
+where p.id = v.product_id
+  and p.slug in (
+    'lensa-blue-light-single-vision',
+    'lensa-progresif-premium',
+    'lensa-photochromic-transitions'
+  );
+-- =============================================================
+--  BAGIAN G — Pengaturan toko demo
+--  Hanya dibuat bila belum ada. Ganti semuanya di Admin → Pengaturan.
+--  Nomor WhatsApp di bawah hanya contoh — ganti sebelum dipakai,
+--  supaya pesanan pelanggan tidak terkirim ke nomor yang salah.
+-- =============================================================
+
+insert into public.store_settings
+  (store_name, whatsapp_number, address, email, open_hours)
+select 'Lensara Demo',
+       '6281234567890',
+       'Jl. Contoh No. 1, Kota Anda',
+       'halo@contoh.id',
+       'Setiap hari, 09.00 - 21.00 WIB'
+where not exists (select 1 from public.store_settings);
+
+-- =============================================================
+--  Ringkasan hasil
+-- =============================================================
 select
-  (select count(*) from public.categories)              as total_kategori,
-  (select count(*) from public.products)                as total_produk,
+  (select count(*) from public.categories)               as total_kategori,
+  (select count(*) from public.products)                 as total_produk,
+  (select count(*) from public.product_variants)         as total_varian,
   (select count(*) from public.product_attributes)       as opsi_filter,
   (select count(*) from public.product_attribute_links)  as pemasangan_atribut;

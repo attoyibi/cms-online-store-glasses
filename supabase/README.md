@@ -1,189 +1,94 @@
 # Database Supabase
 
-SQL untuk menyiapkan database CMS toko kacamata. Semuanya dijalankan dengan
-**copy-paste ke Supabase Dashboard → SQL Editor → New query → Run**.
-
-## Setup baru? Pakai v3 — cuma 2 file
+Semua yang dibutuhkan database ada di **satu file: [`setup.sql`](setup.sql)**.
+Dijalankan dengan copy-paste di **Supabase Dashboard → SQL Editor → New query → Run**.
 
 ```
 supabase/
-├─ README.md      ← file ini
-├─ v1/            ← riwayat (JANGAN diubah lagi)
-├─ v2/            ← riwayat (JANGAN diubah lagi)
-└─ v3/            ← pakai ini untuk setup baru
+├─ setup.sql       SATU file untuk semua: pasang baru dan pembaruan
+├─ seed-demo.sql   Data contoh (opsional)
+├─ reset.sql       Hapus semuanya — hanya untuk uji coba (dikomentari)
+└─ README.md       File ini
 ```
 
-`v3` menggabungkan seluruh isi `v1` + `v2` jadi dua file saja, supaya
-setup awal cukup dua kali copy-paste, bukan enam:
+## Memasang toko baru
 
-| # | File | Isi | Wajib? |
-| - | ---- | --- | ------ |
-| 1 | [`v3/01_schema.sql`](v3/01_schema.sql) | Semua tabel, index, trigger, RLS, dan bucket storage | ✅ |
-| 2 | [`v3/02_seed.sql`](v3/02_seed.sql) | 6 kategori, 18 produk contoh, dan atribut filternya | opsional |
-
-Isinya secara fungsional identik dengan menjalankan `v1/01` → `v1/02` →
-`v1/03` → `v2/01`, lalu `v1/04` → `v2/02`. Kalau database Anda memang
-masih kosong, jalankan `v3` saja dan lewati `v1`/`v2` sama sekali.
-
-`v1` dan `v2` tetap ada di repo sebagai riwayat — untuk proyek yang
-kebetulan sudah terlanjur menjalankannya secara terpisah sebelum `v3`
-ada. Isinya tidak akan diubah lagi.
-
-## Sudah pakai v3? Tambahkan v4 (varian produk)
-
-`v4` menambah **varian produk**: satu produk bisa punya beberapa pilihan dengan
-harga & stok sendiri — terutama untuk lensa, yang harganya bergantung ukuran
-minus/plus. Folder ini hanya berisi perubahan dari v3, jalankan **setelah v3**:
-
-| # | File | Isi | Wajib? |
-| - | ---- | --- | ------ |
-| 1 | [`v4/01_variants.sql`](v4/01_variants.sql) | Tabel `product_variants` + RLS | ✅ untuk fitur varian |
-| 2 | [`v4/02_seed_lap_lensa.sql`](v4/02_seed_lap_lensa.sql) | Kategori & 2 produk Lap Kacamata, varian untuk 3 lensa contoh | opsional |
-
-Keduanya aman dijalankan ulang. Beberapa hal yang perlu diketahui:
-
-- **Situs tetap jalan sebelum v4 dijalankan** — produk biasa tidak terpengaruh,
-  hanya varian yang belum bisa disimpan (admin akan menampilkan pesan yang jelas).
-- Untuk produk **bervarian**, kolom `products.price` berisi harga termurah dan
-  `products.stock` jumlah stok semua varian. Halaman admin mengisinya otomatis;
-  tujuannya agar urutan harga dan filter harga di katalog tetap benar.
-- Kategori & produk di `02_seed_lap_lensa.sql` memakai `on conflict do nothing`,
-  jadi **tidak menimpa** hasil edit Anda di CMS. Kalau Anda sudah punya kategori
-  `lap-kacamata`, isinya dibiarkan.
-- Menjalankan ulang `v3/02_seed.sql` akan **mengembalikan harga** tiga produk
-  lensa ke harga lama (seed-nya meng-upsert harga). Bila itu terjadi, jalankan
-  `v4/02_seed_lap_lensa.sql` lagi — bagian terakhirnya menghitung ulang harga
-  dan stok dari varian.
-
-Cara mengisi varian dari CMS: buka **Admin → Produk → Edit**, isi kolom
-**Varian**, satu baris per varian dengan format `Label | harga | stok | harga coret`
-(stok dan harga coret boleh dikosongkan), mis.:
-
-```
-Minus 0,25 – 4,00 | 250000 | 40
-Minus 4,25 – 6,00 | 350000 | 25
-Minus 6,25 – 8,00 | 450000 | 10 | 500000
-```
-
-## Editor halaman depan? Tambahkan v5
-
-`v5` menyimpan susunan halaman depan yang diatur dari **Admin → Halaman Depan**
-(tambah, duplikasi, urutkan, sembunyikan blok, dan edit isinya). Jalankan **setelah v3**
-(v4 tidak wajib):
-
-| # | File | Isi | Wajib? |
-| - | ---- | --- | ------ |
-| 1 | [`v5/01_site_pages.sql`](v5/01_site_pages.sql) | Tabel `site_pages` (terbit) dan `site_page_drafts` (draft) + RLS | ✅ untuk editor |
-
-- **Situs tetap tampil normal sebelum dan sesudah v5 dijalankan.** Selama belum ada
-  baris terbit, halaman depan memakai susunan bawaan dari kode, yang sama persis
-  dengan tampilan semula. Menjalankan v5 saja **tidak mengubah apa pun** di situs.
-- Dua tabel dipisah agar **draft tidak bisa dibaca publik** — RLS bekerja per baris,
-  bukan per kolom. `site_pages` terbaca publik; `site_page_drafts` hanya admin.
-- Aman dijalankan ulang. Perubahan baru terlihat pengunjung setelah menekan
-  **Terbitkan** di editor.
-- Untuk membatalkan semua kustomisasi dan kembali ke tampilan awal: di editor tekan
-  **Kembalikan bawaan** lalu **Terbitkan**, atau hapus barisnya:
-  `delete from public.site_pages where slug = 'home';`
-
-## Aturan versi
-
-Setiap perubahan skema masuk ke **folder versi baru**. Folder versi lama
-**tidak pernah dihapus atau diubah** — supaya proyek yang sudah terlanjur
-jalan dengan versi lama tetap punya rujukan, dan urutan perubahannya
-bisa ditelusuri.
-
-Kalau nanti perlu menambah kolom atau tabel: buat `v4/`, isi dengan
-`ALTER TABLE …` seperlunya saja — **bukan** salinan lengkap versi
-sebelumnya (itu yang membuat `v3` istimewa: dia sengaja dibuat sebagai
-bundel konsolidasi sekali jalan, bukan pola yang diulang tiap versi).
-
-Versi yang sudah dijalankan tercatat di tabel `schema_versions`. `v3`
-mencatat baris `v1`, `v2`, dan `v3` sekaligus karena isinya setara:
-
-```sql
-select * from public.schema_versions order by applied_at;
-```
-
-### Setelah SQL selesai
-
-1. **Project Settings → API** — salin `Project URL` dan `Publishable key`
-   (atau `anon public key` di proyek lama) ke `.env.local` di root proyek:
-
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
-   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
-   ```
-
-2. **Authentication → Users → Add user** — buat akun untuk login admin.
-   Centang *Auto Confirm User* supaya tidak perlu verifikasi email.
-
-3. **Daftarkan akun itu sebagai admin.** Ini langkah yang paling sering
-   terlewat — tanpa ini, login berhasil tapi semua data gagal dimuat,
-   karena RLS menolak siapa pun yang tidak ada di tabel `admins`:
+1. Buat proyek di [supabase.com](https://supabase.com/dashboard).
+2. **SQL Editor** → tempel seluruh isi [`setup.sql`](setup.sql) → **Run**.
+   Hasil yang benar: satu baris ringkasan dengan `tabel_terpasang_dari_10 = 10`
+   dan status `LANGKAH BERIKUTNYA: daftarkan akun admin`.
+3. **Authentication → Users → Add user**, isi email dan password, dan centang
+   **Auto Confirm User**.
+4. Daftarkan akun itu sebagai admin. **Wajib** — tanpa ini login berhasil, tapi
+   semua data ditolak oleh RLS. Jalankan di SQL Editor (ganti emailnya):
 
    ```sql
    insert into public.admins (user_id, email)
    select id, email from auth.users where email = 'email-anda@contoh.com'
    on conflict (user_id) do nothing;
    ```
+5. **Authentication → Sign In / Providers** → matikan **Allow new users to sign up**,
+   supaya orang asing tidak bisa membuat akun.
+6. **Project Settings → API** → salin *Project URL* dan *Publishable key*, lalu
+   isi `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   (di `.env.local`, dan di Cloudflare → Settings → **Build** → *Build variables*).
+7. Masuk di `/admin/login`, lalu isi **Admin → Pengaturan** (nama toko, nomor
+   WhatsApp, alamat). **Pastikan nomor WhatsApp-nya benar** — itu tujuan semua
+   pesanan pelanggan.
 
-4. Restart `npm run dev`, lalu buka `/admin/login`.
+Data contoh (produk dan kategori demo) opsional: jalankan
+[`seed-demo.sql`](seed-demo.sql) setelah `setup.sql`. Untuk toko sungguhan,
+lewati saja dan isi produk dari admin.
 
-## Riwayat versi (v1 + v2)
+## Memperbarui toko yang sudah berjalan
 
-<details>
-<summary>Buka kalau perlu menjalankan v1/v2 secara terpisah</summary>
+Jalankan **`setup.sql` lagi**, seluruhnya. Itu saja.
 
-### v1 — skema awal
+- **Aman berapa kali pun.** Isinya hanya membuat yang belum ada. Produk,
+  kategori, varian, halaman depan, pengaturan, admin, dan foto **tidak disentuh**.
+- Berlaku untuk database dari versi mana pun: yang dulu dipasang dengan
+  `v1`/`v2`, `v3`, `v4`, atau `v5` semuanya naik ke keadaan terbaru.
+- Dijalankan sebagai satu transaksi: kalau ada yang gagal, tidak ada yang
+  berubah setengah-setengah.
 
-| # | File | Isi | Wajib? |
-| - | ---- | --- | ------ |
-| 1 | [`v1/01_schema.sql`](v1/01_schema.sql) | Tabel, index, trigger, fungsi `is_admin()` | ✅ |
-| 2 | [`v1/02_rls.sql`](v1/02_rls.sql) | Row Level Security + policy | ✅ |
-| 3 | [`v1/03_storage.sql`](v1/03_storage.sql) | Bucket `product-images` untuk foto produk | ✅ |
-| 4 | [`v1/04_seed.sql`](v1/04_seed.sql) | 6 kategori + 18 produk contoh | opsional |
-| — | [`v1/99_reset.sql`](v1/99_reset.sql) | ⚠️ Hapus semua, untuk mulai dari nol | jangan disentuh |
+Setiap kali aplikasi ditambah fitur yang butuh perubahan database, perubahannya
+ditambahkan ke `setup.sql` dan Anda cukup menjalankannya lagi.
 
-### v2 — atribut filter
+## Data contoh
 
-| # | File | Isi | Wajib? |
-| - | ---- | --- | ------ |
-| 1 | [`v2/01_attributes.sql`](v2/01_attributes.sql) | Tabel atribut, relasi ke produk, kolom lebar lensa, RLS | ✅ |
-| 2 | [`v2/02_seed_attributes.sql`](v2/02_seed_attributes.sql) | Daftar bentuk/material/warna + pemasangan ke produk contoh | ✅ |
+[`seed-demo.sql`](seed-demo.sql) mengisi 7 kategori, 20 produk (termasuk Lap
+Kacamata dan tiga lensa bervarian), 20 opsi filter, dan satu pengaturan toko demo.
 
-</details>
+- Aman dijalankan berulang dan **tidak menimpa edit Anda**: harga, nama, atau
+  stok yang sudah Anda ubah di CMS tetap dipertahankan.
+- Pengaturan toko demo hanya dibuat bila belum ada, dengan nomor WhatsApp
+  **contoh** — ganti di Admin → Pengaturan sebelum dipakai.
+- Menghapus data demo: hapus produk dan kategorinya dari Admin.
 
-**Kenapa atribut perlu tabel sendiri?** Sampai v1, detail produk hanya ada
-di kolom `specs` berupa JSON bebas. Bagus untuk ditampilkan, tapi tidak
-bisa difilter — "Asetat premium", "asetat", dan "Acetate" akan jadi tiga
-opsi filter berbeda untuk barang yang sama. Sejak v2, admin **memilih**
-dari daftar, bukan mengetik. Kolom `specs` tetap ada dan tidak berubah.
+## Mulai dari nol lagi (uji coba)
 
-Opsi filter baru bisa ditambah kapan saja lewat **/admin/atribut** tanpa
-perlu menjalankan SQL lagi.
+[`reset.sql`](reset.sql) menghapus semua tabel dan bucket. Isinya sengaja
+dikomentari. Jangan dipakai di toko yang sudah berjalan. Setelah itu jalankan
+`setup.sql` lagi.
 
-## Struktur data
+## Menambah perubahan skema (untuk pengembang)
 
-| Tabel | Isi |
-| ----- | --- |
-| `admins` | Daftar user yang boleh mengelola CMS |
-| `categories` | Kategori produk (`sort_order` menentukan urutan di beranda) |
-| `products` | Produk. `price` dalam rupiah penuh (bukan sen), `specs` berupa JSON bebas |
-| `store_settings` | Baris tunggal: nama toko, nomor WhatsApp, alamat, pengumuman |
-| `product_attributes` | Daftar pilihan filter: bentuk, material, warna |
-| `product_attribute_links` | Atribut mana dipakai produk mana (many-to-many) |
-| `schema_versions` | Catatan versi migrasi yang sudah dijalankan |
+Satu file, selalu idempoten. Aturannya:
 
-## Model keamanan
+1. Tambahkan perubahan **di `setup.sql`**, bukan file baru. Pakai bentuk yang aman
+   diulang: `create table if not exists`, `alter table … add column if not exists`,
+   `create or replace function`, `drop policy if exists` + `create policy`,
+   `on conflict do nothing`.
+2. Untuk kolom baru di tabel yang sudah ada, `create table if not exists` saja
+   **tidak cukup** (tabel lama dilewati). Tambahkan juga `alter table … add column
+   if not exists`, seperti yang sudah dilakukan untuk `lens_width_mm`.
+3. Tambahkan satu baris di bagian *Pencatatan versi* (`v7`, `v8`, …).
+4. Uji dua hal: dijalankan di database **kosong**, dan dijalankan **dua kali**
+   di database yang sudah berisi data (data harus utuh).
 
-- Pengunjung tanpa login hanya bisa **membaca** baris yang `is_active = true`.
-- Menulis (insert/update/delete) hanya bisa dilakukan user yang `user_id`-nya
-  terdaftar di tabel `admins` — dicek lewat fungsi `public.is_admin()`.
-- `store_settings` boleh dibaca siapa saja, karena nomor WhatsApp dan alamat
-  memang ditampilkan di footer situs.
-- Foto di bucket `product-images` bisa dilihat publik, tapi hanya admin yang
-  boleh mengunggah atau menghapus.
+## Keamanan
 
-Karena semua aturan ada di level database, kunci publik yang terekspos di
-browser tidak bisa dipakai untuk mengubah data.
+RLS aktif di semua tabel: publik hanya membaca yang aktif atau terbit; hanya akun
+yang terdaftar di tabel `admins` yang bisa menulis. Draft halaman depan ada di
+tabel terpisah yang hanya bisa dibaca admin. Akun admin baru **tidak bisa**
+mendaftarkan dirinya sendiri; penambahan admin selalu lewat SQL Editor.
