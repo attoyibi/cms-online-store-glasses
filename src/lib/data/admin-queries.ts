@@ -1,6 +1,12 @@
 import "server-only";
 
+import { connection } from "next/server";
+
+import { normalizeBlocks } from "@/lib/blocks/normalize";
+import { defaultHomeBlocks } from "@/lib/blocks/registry";
+import type { Block, PageSource } from "@/lib/blocks/types";
 import { requireAdmin } from "@/lib/supabase/admin";
+import { isSchemaMissing } from "@/lib/supabase/env";
 import type { Category, ProductAttribute } from "@/lib/types";
 
 /**
@@ -41,5 +47,58 @@ export async function loadProductFormOptions(): Promise<{
     // Kosong bila migrasi v2 belum dijalankan — form tetap bisa dipakai
     attributes: (attributesResult.data ?? []) as ProductAttribute[],
     brands,
+  };
+}
+
+export type HomeEditorState = {
+  blocks: Block[];
+  /** Dari mana `blocks` dibaca: draft, yang terbit, atau bawaan kode */
+  source: PageSource;
+  /** Draft berbeda dari yang sedang terbit */
+  unpublished: boolean;
+  /** False bila tabel v5 belum dibuat di Supabase */
+  schemaReady: boolean;
+};
+
+/**
+ * Keadaan editor halaman depan: draft bila ada, kalau tidak yang terbit,
+ * kalau tidak susunan bawaan. Dipakai editor dan halaman pratinjau.
+ */
+export async function loadHomeEditorState(): Promise<HomeEditorState> {
+  // Selalu dirender saat ada permintaan, tidak pernah di-prerender: isinya
+  // draft pribadi admin, dan pemeriksaan login harus berjalan tiap kali —
+  // bukan hanya kebetulan dinamis karena memakai cookies.
+  await connection();
+  const { supabase } = await requireAdmin();
+
+  const [draftResult, publishedResult] = await Promise.all([
+    supabase.from("site_page_drafts").select("blocks").eq("slug", "home").maybeSingle(),
+    supabase.from("site_pages").select("blocks").eq("slug", "home").maybeSingle(),
+  ]);
+
+  const schemaReady = !(
+    isSchemaMissing(draftResult.error) || isSchemaMissing(publishedResult.error)
+  );
+
+  const published = publishedResult.data
+    ? normalizeBlocks(publishedResult.data.blocks)
+    : null;
+  const effectivePublished = published ?? defaultHomeBlocks();
+
+  if (draftResult.data) {
+    const draft = normalizeBlocks(draftResult.data.blocks);
+    return {
+      blocks: draft,
+      source: "draft",
+      unpublished: JSON.stringify(draft) !== JSON.stringify(effectivePublished),
+      schemaReady,
+    };
+  }
+
+  return {
+    blocks: effectivePublished,
+    source: published ? "published" : "default",
+    unpublished: false,
+    schemaReady,
   };
 }

@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
       // CMS dan keranjang tidak berguna di hasil pencarian
-      disallow: ["/admin", "/checkout"],
+      disallow: ["/admin", "/checkout", "/pratinjau"],
     },
     sitemap: absoluteUrl("/sitemap.xml"),
   };

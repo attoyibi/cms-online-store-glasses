@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import Image from "next/image";
 import { ImagePlus, Loader2, Plus, X } from "lucide-react";
 
@@ -23,11 +23,30 @@ const MAX_BYTES = 5 * 1024 * 1024;
 export function ImageUploader({
   name,
   defaultValue,
+  onChange,
+  single = false,
 }: {
   name: string;
   defaultValue: string[];
+  /** Dipanggil setiap daftar gambar berubah — untuk dipakai sebagai input terkontrol */
+  onChange?: (images: string[]) => void;
+  /** Hanya satu gambar: unggahan atau URL baru menggantikan yang lama */
+  single?: boolean;
 }) {
-  const [images, setImages] = useState<string[]>(defaultValue);
+  const inputId = useId();
+  const [images, setImagesState] = useState<string[]>(defaultValue);
+  const latest = useRef<string[]>(defaultValue);
+
+  function setImages(next: string[]) {
+    latest.current = next;
+    setImagesState(next);
+    onChange?.(next);
+  }
+
+  /** Gabungkan gambar baru ke daftar; mode single menggantikan seluruhnya */
+  function addImages(added: string[]) {
+    setImages(single ? added.slice(0, 1) : [...latest.current, ...added]);
+  }
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [manualUrl, setManualUrl] = useState("");
@@ -74,7 +93,7 @@ export function ImageUploader({
         uploaded.push(data.publicUrl);
       }
 
-      if (uploaded.length) setImages((current) => [...current, ...uploaded]);
+      if (uploaded.length) addImages(uploaded);
     } finally {
       setUploading(false);
       if (fileInput.current) fileInput.current.value = "";
@@ -84,7 +103,7 @@ export function ImageUploader({
   function addManual() {
     const url = manualUrl.trim();
     if (!url) return;
-    setImages((current) => [...current, url]);
+    addImages([url]);
     setManualUrl("");
   }
 
@@ -113,7 +132,7 @@ export function ImageUploader({
                 />
               </div>
 
-              {index === 0 && (
+              {index === 0 && !single && (
                 <span className="absolute left-1 top-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
                   Utama
                 </span>
@@ -122,7 +141,7 @@ export function ImageUploader({
               <button
                 type="button"
                 onClick={() =>
-                  setImages((current) => current.filter((_, i) => i !== index))
+                  setImages(latest.current.filter((_, i) => i !== index))
                 }
                 aria-label={`Hapus gambar ${index + 1}`}
                 className="absolute -right-1.5 -top-1.5 flex size-6 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm transition-colors hover:bg-destructive hover:text-white"
@@ -139,10 +158,10 @@ export function ImageUploader({
           ref={fileInput}
           type="file"
           accept={ACCEPTED.join(",")}
-          multiple
+          multiple={!single}
           onChange={(event) => handleFiles(event.target.files)}
           className="hidden"
-          id="image-upload"
+          id={inputId}
         />
         <Button
           type="button"
@@ -159,7 +178,9 @@ export function ImageUploader({
           {uploading ? "Mengunggah…" : "Unggah Gambar"}
         </Button>
         <p className="text-xs text-muted-foreground">
-          PNG/JPG/WEBP, maks 5 MB. Gambar pertama jadi thumbnail.
+          {single
+            ? "PNG/JPG/WEBP, maks 5 MB."
+            : "PNG/JPG/WEBP, maks 5 MB. Gambar pertama jadi thumbnail."}
         </p>
       </div>
 

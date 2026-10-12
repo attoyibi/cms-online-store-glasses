@@ -3,19 +3,29 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
 import { SectionHeading } from "@/components/sections/section-heading";
+import { withDefaults } from "@/lib/blocks/registry";
+import type { CategoryGridProps } from "@/lib/blocks/types";
 import type { Category } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-export function CategoryGrid({ categories }: { categories: Category[] }) {
+export function CategoryGrid({
+  categories,
+  ...rest
+}: { categories: Category[] } & Partial<CategoryGridProps>) {
+  const p = withDefaults("category-grid", rest);
   if (categories.length === 0) return null;
 
   return (
     <section className="container-page py-16 sm:py-20">
       <SectionHeading
-        eyebrow="Kategori"
-        title="Mulai dari kebutuhan Anda"
-        description="Pilih dulu jenisnya, nanti kami bantu persempit ke bentuk dan ukuran yang paling pas."
-        action={{ label: "Semua produk", href: "/produk" }}
+        eyebrow={p.eyebrow}
+        title={p.title}
+        description={p.description}
+        action={
+          p.actionLabel && p.actionHref
+            ? { label: p.actionLabel, href: p.actionHref }
+            : undefined
+        }
       />
 
       <div className="mt-9 grid grid-cols-2 gap-3.5 sm:gap-4 lg:grid-cols-3">
