@@ -1,32 +1,49 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import {
   AlertCircle,
-  ArrowDown,
-  ArrowUp,
+  ArrowLeft,
   CheckCircle2,
-  Copy,
-  Eye,
-  EyeOff,
+  Eraser,
   ExternalLink,
   Loader2,
-  Plus,
+  Redo2,
   RotateCcw,
   Save,
   Send,
-  Trash2,
   Undo2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import type { EditorResult } from "@/app/admin/halaman-depan/actions";
+import { BlockOutline } from "@/components/admin/block-outline";
 import { FieldInput } from "@/components/admin/block-fields";
+import { PreviewPane } from "@/components/admin/preview-pane";
 import { Button } from "@/components/ui/button";
+import {
+  canRedo,
+  canUndo,
+  commit,
+  createHistory,
+  redo,
+  reset,
+  undo,
+  type History,
+} from "@/lib/blocks/history";
 import { createBlock, newBlockId } from "@/lib/blocks/normalize";
 import {
   BLOCK_DEFS,
-  BLOCK_TYPES,
   defaultHomeBlocks,
+  defaultPropsOf,
 } from "@/lib/blocks/registry";
 import { MAX_BLOCKS } from "@/lib/blocks/schema";
 import type { Block, BlockType, PageSource } from "@/lib/blocks/types";
@@ -38,32 +55,23 @@ export type EditorActions = {
   discard: () => Promise<EditorResult>;
 };
 
-const selectClass =
-  "h-9 min-w-0 flex-1 rounded-lg border bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50";
+type HistoryAction =
+  | { type: "update"; update: (blocks: Block[]) => Block[]; key: string | null; now: number }
+  | { type: "undo" }
+  | { type: "redo" }
+  | { type: "reset"; blocks: Block[] };
 
-/** Cuplikan isi blok untuk daftar, supaya blok sejenis mudah dibedakan */
-function summaryOf(block: Block): string {
-  const props = block.props as Record<string, unknown>;
-  const text = (key: string) =>
-    typeof props[key] === "string" ? (props[key] as string) : "";
-
-  const direct = [text("title"), `${text("titleLine1")} ${text("titleHighlight")}`.trim()]
-    .find((candidate) => candidate.length > 0);
-  if (direct) return direct;
-
-  // Blok tanpa judul sendiri (mis. bar keunggulan): ambil dari isi daftar pertama
-  for (const value of Object.values(props)) {
-    if (!Array.isArray(value) || value.length === 0) continue;
-    const item = value[0];
-    if (typeof item === "string" && item) return item;
-    if (item && typeof item === "object") {
-      const firstText = Object.values(item).find(
-        (v) => typeof v === "string" && v.length > 0 && !/^[a-z]+(-[a-z]+)*$/.test(v),
-      );
-      if (typeof firstText === "string") return firstText;
-    }
+function historyReducer(history: History, action: HistoryAction): History {
+  switch (action.type) {
+    case "update":
+      return commit(history, action.update(history.present), action.key, action.now);
+    case "undo":
+      return undo(history);
+    case "redo":
+      return redo(history);
+    case "reset":
+      return reset(action.blocks);
   }
-  return text("eyebrow");
 }
 
 function move<T>(list: T[], index: number, direction: -1 | 1): T[] {
@@ -74,6 +82,14 @@ function move<T>(list: T[], index: number, direction: -1 | 1): T[] {
   return next;
 }
 
+/** Pintasan keyboard undo/redo tidak boleh merebut Ctrl+Z milik kolom teks */
+function isEditable(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    target.closest("input, textarea, select, [contenteditable='true']") !== null
+  );
+}
+
 export function PageEditor({
   initialBlocks,
   source,
@@ -81,31 +97,77 @@ export function PageEditor({
   schemaReady,
   actions,
   previewHref,
+  livePreviewSrc = "/pratinjau/langsung",
 }: {
   initialBlocks: Block[];
   source: PageSource;
   unpublished: boolean;
   schemaReady: boolean;
   actions: EditorActions;
+  /** Pratinjau draft di tab baru */
   previewHref: string;
+  /** Halaman yang dimuat di iframe pratinjau langsung */
+  livePreviewSrc?: string;
 }) {
-  const [blocks, setBlocks] = useState<Block[]>(initialBlocks);
+  const [history, dispatch] = useReducer(historyReducer, initialBlocks, createHistory);
+  const blocks = history.present;
+
   const [savedJson, setSavedJson] = useState(() => JSON.stringify(initialBlocks));
   const [unpublished, setUnpublished] = useState(initialUnpublished);
   // Pernah diterbitkan (dari database atau dari sesi ini) — bukan lagi "bawaan"
   const [everPublished, setEverPublished] = useState(source !== "default");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [newType, setNewType] = useState<BlockType>("product-showcase");
+  const [tab, setTab] = useState<"outline" | "form">("outline");
+  const [scrollRequest, setScrollRequest] = useState<{ id: string; n: number } | null>(null);
   const [formVersion, setFormVersion] = useState(0);
   const [feedback, setFeedback] = useState<
     { kind: "ok" | "error"; text: string } | null
   >(null);
   const [pending, startTransition] = useTransition();
+  const formRef = useRef<HTMLDivElement>(null);
 
   const json = useMemo(() => JSON.stringify(blocks), [blocks]);
   const dirty = json !== savedJson;
   const visibleCount = blocks.filter((block) => !block.hidden).length;
   const selected = blocks.find((block) => block.id === selectedId) ?? null;
+
+  // Salinan terbaru riwayat, untuk tombol "Urungkan" di notifikasi
+  const historyRef = useRef(history);
+  useEffect(() => {
+    historyRef.current = history;
+  }, [history]);
+
+  const apply = useCallback(
+    (update: (blocks: Block[]) => Block[], key: string | null = null) =>
+      dispatch({ type: "update", update, key, now: Date.now() }),
+    [],
+  );
+
+  // ------------------------------------------------------- undo / redo
+  const doUndo = useCallback(() => {
+    dispatch({ type: "undo" });
+    setFormVersion((version) => version + 1);
+  }, []);
+  const doRedo = useCallback(() => {
+    dispatch({ type: "redo" });
+    setFormVersion((version) => version + 1);
+  }, []);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (!(event.ctrlKey || event.metaKey) || isEditable(event.target)) return;
+      const key = event.key.toLowerCase();
+      if (key === "z" && !event.shiftKey) {
+        event.preventDefault();
+        doUndo();
+      } else if (key === "y" || (key === "z" && event.shiftKey)) {
+        event.preventDefault();
+        doRedo();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [doUndo, doRedo]);
 
   // Peringatan bila menutup halaman saat ada perubahan yang belum disimpan
   useEffect(() => {
@@ -115,46 +177,127 @@ export function PageEditor({
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
 
+  // ------------------------------------------------------- pemilihan blok
+  /** Dipilih dari pratinjau: buka form-nya, dan di layar sempit gulir ke sana */
+  const selectFromPreview = useCallback((id: string) => {
+    setSelectedId(id);
+    setTab("form");
+    if (window.matchMedia("(max-width: 1023px)").matches) {
+      window.setTimeout(
+        () => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        50,
+      );
+    }
+  }, []);
+
+  /** Dipilih dari daftar: buka form-nya dan arahkan pratinjau ke blok itu */
+  function selectFromOutline(id: string) {
+    setSelectedId(id);
+    setTab("form");
+    setScrollRequest((current) => ({ id, n: (current?.n ?? 0) + 1 }));
+  }
+
+  // ------------------------------------------------------- operasi blok
   function setProp(id: string, name: string, value: unknown) {
-    setBlocks((current) =>
-      current.map((block) =>
-        block.id === id
-          ? ({ ...block, props: { ...block.props, [name]: value } } as Block)
-          : block,
-      ),
+    // Ketikan beruntun di kolom yang sama = satu langkah undo. Penambahan/
+    // penghapusan item daftar mengubah panjangnya, jadi tercatat terpisah.
+    const key = `prop:${id}:${name}:${Array.isArray(value) ? value.length : ""}`;
+    apply(
+      (current) =>
+        current.map((block) =>
+          block.id === id
+            ? ({ ...block, props: { ...block.props, [name]: value } } as Block)
+            : block,
+        ),
+      key,
     );
   }
 
-  function addBlock() {
+  function addBlock(type: BlockType) {
     if (blocks.length >= MAX_BLOCKS) return;
-    const block = createBlock(newType);
-    const at = selected ? blocks.findIndex((b) => b.id === selected.id) + 1 : blocks.length;
-    setBlocks([...blocks.slice(0, at), block, ...blocks.slice(at)]);
+    const block = createBlock(type);
+    const after = selectedId;
+    apply((current) => {
+      const index = after ? current.findIndex((b) => b.id === after) : -1;
+      const at = index >= 0 ? index + 1 : current.length;
+      return [...current.slice(0, at), block, ...current.slice(at)];
+    });
     setSelectedId(block.id);
+    setTab("form");
+    setScrollRequest((current) => ({ id: block.id, n: (current?.n ?? 0) + 1 }));
     setFeedback(null);
   }
 
   function duplicateBlock(id: string) {
     if (blocks.length >= MAX_BLOCKS) return;
-    const index = blocks.findIndex((block) => block.id === id);
-    if (index < 0) return;
-    const copy = {
-      ...structuredClone(blocks[index]),
-      id: newBlockId(blocks[index].type),
-    } as Block;
-    setBlocks([...blocks.slice(0, index + 1), copy, ...blocks.slice(index + 1)]);
+    const source = blocks.find((block) => block.id === id);
+    if (!source) return;
+    const copy = { ...structuredClone(source), id: newBlockId(source.type) } as Block;
+    apply((current) => {
+      const index = current.findIndex((b) => b.id === id);
+      if (index < 0) return current;
+      return [...current.slice(0, index + 1), copy, ...current.slice(index + 1)];
+    });
     setSelectedId(copy.id);
+    setTab("form");
+    setScrollRequest((current) => ({ id: copy.id, n: (current?.n ?? 0) + 1 }));
   }
 
   function removeBlock(block: Block) {
-    const label = BLOCK_DEFS[block.type].label;
-    if (!window.confirm(`Hapus blok "${label}"? Ini bisa dibatalkan dengan tombol "Buang perubahan" selama belum disimpan.`)) {
-      return;
-    }
-    setBlocks((current) => current.filter((b) => b.id !== block.id));
+    const next = blocks.filter((b) => b.id !== block.id);
+    apply(() => next);
     if (selectedId === block.id) setSelectedId(null);
+
+    // Tanpa konfirmasi: hapus bisa dibatalkan. Tombol di notifikasi hanya
+    // bekerja bila belum ada perubahan lain sesudahnya.
+    toast(`Blok "${BLOCK_DEFS[block.type].label}" dihapus`, {
+      action: {
+        label: "Urungkan",
+        onClick: () => {
+          if (historyRef.current.present === next) {
+            doUndo();
+          } else {
+            toast("Sudah ada perubahan lain — pakai tombol Urungkan di atas.");
+          }
+        },
+      },
+    });
   }
 
+  function toggleHidden(id: string) {
+    apply((current) =>
+      current.map((block) =>
+        block.id === id ? ({ ...block, hidden: !block.hidden } as Block) : block,
+      ),
+    );
+  }
+
+  function moveBlock(index: number, direction: -1 | 1) {
+    apply((current) => move(current, index, direction));
+  }
+
+  function resetBlock(block: Block) {
+    apply((current) =>
+      current.map((b) =>
+        b.id === block.id
+          ? ({ ...b, props: defaultPropsOf(b.type) } as Block)
+          : b,
+      ),
+    );
+    setFormVersion((version) => version + 1);
+    toast(`Blok "${BLOCK_DEFS[block.type].label}" dikembalikan ke bawaan`);
+  }
+
+  function resetAll() {
+    apply(() => defaultHomeBlocks());
+    setSelectedId(null);
+    setTab("outline");
+    setFormVersion((version) => version + 1);
+    setFeedback(null);
+    toast("Susunan dan teks dikembalikan ke bawaan. Belum disimpan — bisa diurungkan.");
+  }
+
+  // ------------------------------------------------ simpan / terbitkan
   function run(
     action: () => Promise<EditorResult>,
     onSuccess?: (result: EditorResult) => void,
@@ -209,27 +352,19 @@ export function PageEditor({
   }
 
   function discard() {
-    if (!window.confirm("Buang semua perubahan dan kembali ke versi yang sedang terbit?")) {
+    // Satu-satunya tindakan yang tidak bisa diurungkan: draft di server ikut dibuang
+    if (!window.confirm("Buang semua perubahan, termasuk draft yang sudah disimpan, dan kembali ke versi yang sedang terbit? Ini tidak bisa diurungkan.")) {
       return;
     }
     run(actions.discard, (result) => {
       const restored = result.blocks ?? defaultHomeBlocks();
-      setBlocks(restored);
+      dispatch({ type: "reset", blocks: restored });
       setSavedJson(JSON.stringify(restored));
       setUnpublished(false);
       setSelectedId(null);
+      setTab("outline");
       setFormVersion((version) => version + 1);
     });
-  }
-
-  function resetToDefault() {
-    if (!window.confirm("Kembalikan susunan dan semua teks ke bawaan awal? Belum disimpan sampai Anda menekan Simpan draft.")) {
-      return;
-    }
-    setBlocks(defaultHomeBlocks());
-    setSelectedId(null);
-    setFormVersion((version) => version + 1);
-    setFeedback(null);
   }
 
   const status = dirty
@@ -240,8 +375,10 @@ export function PageEditor({
         ? { text: "Tampilan bawaan (belum pernah diedit)", tone: "text-muted-foreground bg-muted border-border" }
         : { text: "Sudah terbit", tone: "text-green-700 bg-green-50 border-green-200" };
 
+  const definition = selected ? BLOCK_DEFS[selected.type] : null;
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-4" data-admin-wide>
       {!schemaReady && (
         <p
           role="alert"
@@ -257,28 +394,58 @@ export function PageEditor({
         </p>
       )}
 
-      <div className="sticky top-0 z-20 -mx-5 flex flex-wrap items-center gap-3 border-b bg-background/95 px-5 py-3 backdrop-blur sm:-mx-8 sm:px-8">
+      {/* ------------------------------------------------------ toolbar */}
+      <div className="sticky top-0 z-20 -mx-5 flex flex-wrap items-center gap-2 border-b bg-background/95 px-5 py-2.5 backdrop-blur sm:-mx-8 sm:px-8">
         <span className={cn("rounded-full border px-3 py-1 text-xs font-medium", status.tone)}>
           {status.text}
         </span>
 
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1">
           <Button
             type="button"
             variant="outline"
             size="sm"
-            onClick={discard}
-            disabled={pending || !schemaReady}
+            onClick={doUndo}
+            disabled={!canUndo(history)}
+            title="Urungkan (Ctrl+Z)"
+            aria-label="Urungkan"
             className="gap-1.5"
           >
             <Undo2 className="size-3.5" aria-hidden="true" />
-            Buang perubahan
+            <span className="hidden sm:inline">Urungkan</span>
           </Button>
           <Button
             type="button"
             variant="outline"
             size="sm"
-            onClick={resetToDefault}
+            onClick={doRedo}
+            disabled={!canRedo(history)}
+            title="Ulangi (Ctrl+Shift+Z)"
+            aria-label="Ulangi"
+            className="gap-1.5"
+          >
+            <Redo2 className="size-3.5" aria-hidden="true" />
+            <span className="hidden sm:inline">Ulangi</span>
+          </Button>
+        </div>
+
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={discard}
+            disabled={pending || !schemaReady}
+            className="gap-1.5"
+          >
+            <Eraser className="size-3.5" aria-hidden="true" />
+            Buang perubahan
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={resetAll}
             disabled={pending}
             className="gap-1.5"
           >
@@ -286,9 +453,9 @@ export function PageEditor({
             Kembalikan bawaan
           </Button>
           <Button asChild variant="outline" size="sm">
-            <a href={previewHref} target="_blank" rel="noreferrer" className="gap-1.5">
+            <a href={previewHref} target="_blank" rel="noreferrer" className="gap-1.5" title="Buka draft yang sudah disimpan di tab baru">
               <ExternalLink className="size-3.5" aria-hidden="true" />
-              Pratinjau
+              Tab baru
             </a>
           </Button>
           <Button
@@ -344,161 +511,94 @@ export function PageEditor({
         </p>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,23rem)_minmax(0,1fr)]">
-        {/* ------------------------------------------------ daftar blok */}
-        <section aria-label="Daftar blok" className="space-y-4">
-          <div className="space-y-2 rounded-xl border bg-card p-3.5">
-            <label htmlFor="new-block-type" className="text-sm font-medium">
-              Tambah blok baru
-            </label>
-            <div className="flex gap-2">
-              <select
-                id="new-block-type"
-                value={newType}
-                onChange={(event) => setNewType(event.target.value as BlockType)}
-                className={selectClass}
-              >
-                {BLOCK_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {BLOCK_DEFS[type].label}
-                  </option>
-                ))}
-              </select>
-              <Button
+      {/* ----------------------------------------- pratinjau + panel kiri */}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+        {/* Pratinjau di atas pada layar sempit, di kanan pada layar lebar */}
+        <div className="h-[62dvh] min-h-80 lg:sticky lg:top-[4.25rem] lg:col-start-2 lg:row-start-1 lg:h-[calc(100dvh-6.5rem)]">
+          <PreviewPane
+            src={livePreviewSrc}
+            blocks={blocks}
+            selectedId={selectedId}
+            scrollRequest={scrollRequest}
+            onSelect={selectFromPreview}
+            onUndo={doUndo}
+            onRedo={doRedo}
+          />
+        </div>
+
+        <aside className="min-w-0 space-y-3 lg:col-start-1 lg:row-start-1 lg:max-h-[calc(100dvh-6.5rem)] lg:overflow-y-auto lg:pr-1">
+          <div role="tablist" aria-label="Panel editor" className="grid grid-cols-2 gap-1 rounded-xl border bg-muted/50 p-1">
+            {(
+              [
+                { id: "outline", label: "Susunan halaman" },
+                { id: "form", label: "Pengaturan blok" },
+              ] as const
+            ).map((item) => (
+              <button
+                key={item.id}
                 type="button"
-                size="sm"
-                onClick={addBlock}
-                disabled={blocks.length >= MAX_BLOCKS}
-                className="h-9 gap-1.5"
+                role="tab"
+                aria-selected={tab === item.id}
+                onClick={() => setTab(item.id)}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                  tab === item.id
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
               >
-                <Plus className="size-3.5" aria-hidden="true" />
-                Tambah
-              </Button>
-            </div>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              {BLOCK_DEFS[newType].description}{" "}
-              {selected
-                ? "Blok baru masuk tepat di bawah blok yang sedang dipilih."
-                : "Blok baru masuk di paling bawah."}
-            </p>
+                {item.label}
+              </button>
+            ))}
           </div>
 
-          <ol className="space-y-2">
-            {blocks.map((block, index) => {
-              const definition = BLOCK_DEFS[block.type];
-              const active = block.id === selectedId;
-              return (
-                <li
-                  key={block.id}
-                  className={cn(
-                    "rounded-xl border bg-card transition-colors",
-                    active && "border-primary ring-1 ring-primary",
-                    block.hidden && "opacity-60",
-                  )}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setSelectedId(block.id)}
-                    aria-current={active ? "true" : undefined}
-                    className="block w-full rounded-t-xl px-3.5 pb-1.5 pt-3 text-left outline-offset-2 focus-visible:outline-2 focus-visible:outline-ring"
-                  >
-                    <span className="flex items-center gap-2 text-sm font-medium">
-                      <span className="tabular-nums text-muted-foreground">
-                        {index + 1}.
-                      </span>
-                      {definition.label}
-                      {block.hidden && (
-                        <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                          Disembunyikan
-                        </span>
-                      )}
-                    </span>
-                    <span className="mt-0.5 line-clamp-1 block text-xs text-muted-foreground">
-                      {summaryOf(block) || "—"}
-                    </span>
-                  </button>
-
-                  <div className="flex items-center gap-0.5 px-2 pb-2">
-                    <IconButton
-                      label={`Naikkan blok ${index + 1}`}
-                      disabled={index === 0}
-                      onClick={() => setBlocks(move(blocks, index, -1))}
-                    >
-                      <ArrowUp className="size-3.5" aria-hidden="true" />
-                    </IconButton>
-                    <IconButton
-                      label={`Turunkan blok ${index + 1}`}
-                      disabled={index === blocks.length - 1}
-                      onClick={() => setBlocks(move(blocks, index, 1))}
-                    >
-                      <ArrowDown className="size-3.5" aria-hidden="true" />
-                    </IconButton>
-                    <IconButton
-                      label={block.hidden ? `Tampilkan blok ${index + 1}` : `Sembunyikan blok ${index + 1}`}
-                      onClick={() =>
-                        setBlocks(
-                          blocks.map((b) =>
-                            b.id === block.id ? ({ ...b, hidden: !b.hidden } as Block) : b,
-                          ),
-                        )
-                      }
-                    >
-                      {block.hidden ? (
-                        <Eye className="size-3.5" aria-hidden="true" />
-                      ) : (
-                        <EyeOff className="size-3.5" aria-hidden="true" />
-                      )}
-                    </IconButton>
-                    <IconButton
-                      label={`Duplikasi blok ${index + 1}`}
-                      disabled={blocks.length >= MAX_BLOCKS}
-                      onClick={() => duplicateBlock(block.id)}
-                    >
-                      <Copy className="size-3.5" aria-hidden="true" />
-                    </IconButton>
-                    <span className="flex-1" />
-                    <IconButton
-                      label={`Hapus blok ${index + 1}`}
-                      danger
-                      onClick={() => removeBlock(block)}
-                    >
-                      <Trash2 className="size-3.5" aria-hidden="true" />
-                    </IconButton>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-
-          {blocks.length === 0 && (
-            <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
-              Belum ada blok. Tambahkan dari kotak di atas, atau tekan
-              &ldquo;Kembalikan bawaan&rdquo;.
-            </p>
-          )}
-          <p className="text-xs text-muted-foreground">
-            {blocks.length} dari {MAX_BLOCKS} blok. Pratinjau menampilkan draft
-            yang sudah disimpan.
-          </p>
-        </section>
-
-        {/* ------------------------------------------------- form blok */}
-        <section aria-label="Pengaturan blok" className="min-w-0">
-          {selected ? (
+          {tab === "outline" ? (
+            <BlockOutline
+              blocks={blocks}
+              selectedId={selectedId}
+              onSelect={selectFromOutline}
+              onMove={moveBlock}
+              onToggleHidden={toggleHidden}
+              onDuplicate={duplicateBlock}
+              onRemove={removeBlock}
+              onAdd={addBlock}
+            />
+          ) : selected && definition ? (
             <div
+              ref={formRef}
               key={`${selected.id}-${formVersion}`}
-              className="space-y-5 rounded-xl border bg-card p-5"
+              className="space-y-5 rounded-xl border bg-card p-4"
             >
-              <div>
-                <h2 className="text-lg font-semibold">
-                  {BLOCK_DEFS[selected.type].label}
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  {BLOCK_DEFS[selected.type].description}
-                </p>
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setTab("outline")}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <ArrowLeft className="size-3" aria-hidden="true" />
+                  Susunan halaman
+                </button>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-semibold">{definition.label}</h2>
+                    <p className="text-sm text-muted-foreground">
+                      {definition.description}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => resetBlock(selected)}
+                  className="gap-1.5"
+                >
+                  <RotateCcw className="size-3.5" aria-hidden="true" />
+                  Kembalikan blok ini ke bawaan
+                </Button>
               </div>
 
-              {BLOCK_DEFS[selected.type].fields.map((field) => (
+              {definition.fields.map((field) => (
                 <FieldInput
                   key={field.name}
                   field={field}
@@ -509,47 +609,17 @@ export function PageEditor({
               ))}
             </div>
           ) : (
-            <div className="flex min-h-64 flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-8 text-center">
+            <div className="flex min-h-56 flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-6 text-center">
               <p className="font-medium">Pilih sebuah blok untuk mengeditnya</p>
-              <p className="max-w-sm text-sm text-muted-foreground">
-                Klik salah satu blok di daftar. Anda bisa mengubah teks, gambar,
-                dan tautannya di sini, atau mengatur urutan dan
-                menyembunyikannya dari tombol di bawah tiap blok.
+              <p className="max-w-xs text-sm text-muted-foreground">
+                Klik bagian mana pun di pratinjau, atau pilih dari tab
+                &ldquo;Susunan halaman&rdquo;. Setiap perubahan langsung terlihat,
+                dan bisa diurungkan.
               </p>
             </div>
           )}
-        </section>
+        </aside>
       </div>
     </div>
-  );
-}
-
-function IconButton({
-  label,
-  onClick,
-  disabled,
-  danger,
-  children,
-}: {
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-  danger?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      title={label}
-      className={cn(
-        "flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30",
-        danger && "hover:bg-destructive/10 hover:text-destructive",
-      )}
-    >
-      {children}
-    </button>
   );
 }
