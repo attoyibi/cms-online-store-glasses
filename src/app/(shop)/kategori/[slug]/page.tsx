@@ -28,15 +28,25 @@ function parseSort(value: string | string[] | undefined): ProductSort {
 export async function generateMetadata(
   props: PageProps<"/kategori/[slug]">,
 ): Promise<Metadata> {
-  const { slug } = await props.params;
+  const [{ slug }, searchParams] = await Promise.all([
+    props.params,
+    props.searchParams,
+  ]);
   const category = await getCategoryBySlug(slug);
   if (!category) return { title: "Kategori tidak ditemukan" };
+
+  // Filter/urutan = canonical ke halaman kategori; pencarian (?q=) tidak diindeks
+  const searching = Boolean(
+    Array.isArray(searchParams.q) ? searchParams.q[0] : searchParams.q,
+  );
 
   return {
     title: category.name,
     description:
       category.description ??
       `Koleksi ${category.name} pilihan. Pesan lewat WhatsApp, kirim ke seluruh Indonesia.`,
+    alternates: searching ? undefined : { canonical: `/kategori/${slug}` },
+    robots: searching ? { index: false, follow: true } : undefined,
   };
 }
 

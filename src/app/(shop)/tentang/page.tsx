@@ -7,6 +7,7 @@ import { TrustBar } from "@/components/sections/trust-bar";
 
 export const metadata: Metadata = {
   title: "Tentang Kami",
+  alternates: { canonical: "/tentang" },
   description:
     "Optik kecil dari Yogyakarta yang menyeleksi sendiri setiap frame sebelum masuk katalog.",
 };

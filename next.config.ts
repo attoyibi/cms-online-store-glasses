@@ -52,7 +52,36 @@ function warnIfSupabaseMissing() {
   );
 }
 
+/**
+ * Peringatkan bila alamat situs tidak diisi saat build produksi. Tanpa ini,
+ * sitemap, tautan kanonik, og:url, dan data terstruktur diam-diam menunjuk
+ * ke http://localhost:3000 dan SEO tidak bekerja — padahal build tetap sukses.
+ * Ditulis terpisah dari peringatan Supabase karena peringatan itu berhenti
+ * lebih awal bila Supabase sudah terkonfigurasi.
+ */
+function warnIfSiteUrlMissing() {
+  if (process.env.NODE_ENV !== "production") return;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  if (siteUrl && !/localhost|127\.0\.0\.1/.test(siteUrl)) return;
+
+  console.warn(
+    [
+      "",
+      "  ┌──────────────────────────────────────────────────────────────┐",
+      "  │  PERINGATAN: NEXT_PUBLIC_SITE_URL belum diisi                  │",
+      "  └──────────────────────────────────────────────────────────────┘",
+      "",
+      "  Sitemap, canonical, og:url, dan data terstruktur akan menunjuk ke",
+      "  localhost, sehingga SEO tidak bekerja. Isi dengan alamat situs",
+      "  (mis. https://namatoko.com) di Cloudflare → Settings → Build →",
+      "  Build variables, lalu deploy ulang.",
+      "",
+    ].join("\n"),
+  );
+}
+
 warnIfSupabaseMissing();
+warnIfSiteUrlMissing();
 
 /** Izinkan gambar dari Supabase Storage bila proyeknya sudah dikonfigurasi */
 const supabaseHost = (() => {

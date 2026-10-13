@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
+
 import { BlockRenderer } from "@/components/blocks/block-renderer";
 import { getPublishedBlocks } from "@/lib/data/queries";
+
+// Judul dan deskripsi beranda berasal dari layout; di sini hanya penanda alamat resmi
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 /**
  * Halaman depan dirakit dari daftar blok yang bisa diatur di

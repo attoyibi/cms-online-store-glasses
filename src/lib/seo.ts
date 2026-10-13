@@ -47,6 +47,30 @@ export function productJsonLd(product: Product) {
   };
 }
 
+/** Gambar pertama yang layak dibagikan. SVG tidak ditampilkan WhatsApp/Facebook/X. */
+export function shareableImage(images: string[]): string | undefined {
+  return images.find((src) => !src.toLowerCase().endsWith(".svg"));
+}
+
+/** Data terstruktur BreadcrumbList — jejak halaman yang tampil di hasil Google */
+export function breadcrumbJsonLd(items: { name: string; path: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      item: absoluteUrl(item.path),
+    })),
+  };
+}
+
+/** Apakah alamat situs masih nilai bawaan lokal — tanda NEXT_PUBLIC_SITE_URL belum diisi */
+export function siteUrlIsPlaceholder(): boolean {
+  return /localhost|127\.0\.0\.1/.test(siteConfig.url);
+}
+
 /**
  * Serialisasi JSON-LD untuk disisipkan di <script>. Karakter `<` di-escape
  * supaya teks dari CMS (mis. "</script>" di deskripsi) tidak bisa menutup tag.
