@@ -3,6 +3,7 @@ import { AlertTriangle, ArrowRight, Package, Star, Tags } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/format";
+import { siteUrlIsPlaceholder } from "@/lib/seo";
 import { requireAdmin } from "@/lib/supabase/admin";
 import type { Product } from "@/lib/types";
 
@@ -40,6 +41,24 @@ export default async function AdminDashboard() {
           Masuk sebagai {user.email}
         </p>
       </header>
+
+      {process.env.NODE_ENV === "production" && siteUrlIsPlaceholder() && (
+        <p
+          role="alert"
+          className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900"
+        >
+          <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <span>
+            <strong>Alamat situs belum diatur</strong>, jadi sitemap, tautan
+            kanonik, dan pratinjau tautan WhatsApp masih menunjuk ke{" "}
+            <code className="font-mono">localhost</code> dan SEO belum
+            bekerja. Isi variabel{" "}
+            <code className="font-mono">NEXT_PUBLIC_SITE_URL</code> dengan
+            alamat situs ini (mis. https://namatoko.com) di Cloudflare →
+            Settings → Build → Build variables, lalu deploy ulang.
+          </span>
+        </p>
+      )}
 
       {products.error && (
         <p
