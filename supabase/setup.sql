@@ -18,6 +18,7 @@
 --    1  pencatat versi          7  varian produk
 --    2  admin + is_admin()      8  halaman depan (terbit + draft)
 --    3  kategori               8b  pengaturan SEO & bisnis lokal
+--                              8c  SEO per halaman statis
 --    4  produk                  9  trigger updated_at
 --    5  atribut filter         10  Row Level Security (RLS)
 --    6  pengaturan toko        11  penyimpanan foto
@@ -126,6 +127,21 @@ create table if not exists public.products (
 alter table public.products
   add column if not exists lens_width_mm integer
     check (lens_width_mm is null or (lens_width_mm between 30 and 80));
+
+-- SEO per produk dan per kategori (v8). Kosong = judul dan deskripsi
+-- dibuat otomatis dari nama dan deskripsi produk/kategori.
+alter table public.products
+  add column if not exists seo_title text
+    check (seo_title is null or char_length(seo_title) <= 70);
+alter table public.products
+  add column if not exists seo_description text
+    check (seo_description is null or char_length(seo_description) <= 200);
+alter table public.categories
+  add column if not exists seo_title text
+    check (seo_title is null or char_length(seo_title) <= 70);
+alter table public.categories
+  add column if not exists seo_description text
+    check (seo_description is null or char_length(seo_description) <= 200);
 
 create index if not exists products_active_created_idx
   on public.products (is_active, created_at desc);
@@ -316,6 +332,22 @@ create unique index if not exists seo_settings_singleton_idx
   on public.seo_settings ((true));
 
 -- -------------------------------------------------------------
+-- 8c. SEO halaman statis (beranda, semua produk, tentang, cara pesan)
+--     Satu baris per halaman, dibuat dari Admin → SEO & Toko → Halaman.
+--     Tanpa baris = judul dan deskripsi bawaan aplikasi. Isinya tampil
+--     publik di <head> halaman, jadi boleh dibaca siapa saja.
+-- -------------------------------------------------------------
+create table if not exists public.seo_pages (
+  slug            text primary key
+    check (slug in ('beranda', 'produk', 'tentang', 'cara-pesan')),
+  seo_title       text check (seo_title is null or char_length(seo_title) <= 70),
+  seo_description text check (seo_description is null or char_length(seo_description) <= 200),
+  og_image        text,
+  noindex         boolean not null default false,
+  updated_at      timestamptz not null default now()
+);
+
+-- -------------------------------------------------------------
 -- 9. Trigger updated_at
 -- -------------------------------------------------------------
 create or replace function public.touch_updated_at()
@@ -348,6 +380,10 @@ drop trigger if exists site_page_drafts_touch on public.site_page_drafts;
 create trigger site_page_drafts_touch before update on public.site_page_drafts
   for each row execute function public.touch_updated_at();
 
+drop trigger if exists seo_pages_touch on public.seo_pages;
+create trigger seo_pages_touch before update on public.seo_pages
+  for each row execute function public.touch_updated_at();
+
 drop trigger if exists seo_settings_touch on public.seo_settings;
 create trigger seo_settings_touch before update on public.seo_settings
   for each row execute function public.touch_updated_at();
@@ -370,6 +406,7 @@ alter table public.product_variants        enable row level security;
 alter table public.site_pages              enable row level security;
 alter table public.site_page_drafts        enable row level security;
 alter table public.seo_settings            enable row level security;
+alter table public.seo_pages               enable row level security;
 
 -- schema_versions — hanya admin yang perlu tahu isinya
 drop policy if exists "versions admin read" on public.schema_versions;
@@ -462,6 +499,15 @@ drop policy if exists "seo admin write" on public.seo_settings;
 create policy "seo admin write" on public.seo_settings
   for all using (public.is_admin()) with check (public.is_admin());
 
+-- seo_pages — sama seperti seo_settings: baca publik, tulis admin.
+drop policy if exists "seo pages public read" on public.seo_pages;
+create policy "seo pages public read" on public.seo_pages
+  for select using (true);
+
+drop policy if exists "seo pages admin write" on public.seo_pages;
+create policy "seo pages admin write" on public.seo_pages
+  for all using (public.is_admin()) with check (public.is_admin());
+
 -- site_page_drafts — hanya admin, baca maupun tulis
 drop policy if exists "drafts admin all" on public.site_page_drafts;
 create policy "drafts admin all" on public.site_page_drafts
@@ -502,7 +548,8 @@ values
   ('v4', 'Varian produk (harga & stok per pilihan), mis. ukuran lensa'),
   ('v5', 'Editor blok halaman depan: site_pages (terbit) + site_page_drafts (draft)'),
   ('v6', 'Semua digabung menjadi satu file setup.sql yang aman dijalankan berulang'),
-  ('v7', 'Pengaturan SEO dan bisnis lokal (seo_settings): kota, alamat situs, data terstruktur, verifikasi, pelacakan')
+  ('v7', 'Pengaturan SEO dan bisnis lokal (seo_settings): kota, alamat situs, data terstruktur, verifikasi, pelacakan'),
+  ('v8', 'SEO per produk, kategori, dan halaman statis (seo_title, seo_description, seo_pages)')
 on conflict (version) do nothing;
 
 -- -------------------------------------------------------------
@@ -524,8 +571,8 @@ select
       and table_name in (
         'schema_versions', 'admins', 'categories', 'products',
         'product_attributes', 'product_attribute_links', 'store_settings',
-        'product_variants', 'site_pages', 'site_page_drafts', 'seo_settings'
-      ))                                          as tabel_terpasang_dari_11,
+        'product_variants', 'site_pages', 'site_page_drafts', 'seo_settings', 'seo_pages'
+      ))                                          as tabel_terpasang_dari_12,
   (select count(*) from public.admins)            as jumlah_admin,
   (select string_agg(version, ', ' order by version)
      from public.schema_versions)                 as versi_tercatat,

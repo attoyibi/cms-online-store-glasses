@@ -12,9 +12,11 @@ import {
   getCategories,
   getCategoryBySlug,
   getRecommendedProducts,
+  getSiteIdentity,
   type ProductSort,
 } from "@/lib/data/queries";
 import { parseFilters } from "@/lib/filters";
+import { categorySeo } from "@/lib/seo-meta";
 
 const VALID_SORTS: ProductSort[] = ["terbaru", "termurah", "termahal", "nama"];
 
@@ -32,8 +34,12 @@ export async function generateMetadata(
     props.params,
     props.searchParams,
   ]);
-  const category = await getCategoryBySlug(slug);
+  const [category, identity] = await Promise.all([
+    getCategoryBySlug(slug),
+    getSiteIdentity(),
+  ]);
   if (!category) return { title: "Kategori tidak ditemukan" };
+  const seo = categorySeo(category, identity.city);
 
   // Filter/urutan = canonical ke halaman kategori; pencarian (?q=) tidak diindeks
   const searching = Boolean(
@@ -41,10 +47,16 @@ export async function generateMetadata(
   );
 
   return {
-    title: category.name,
-    description:
-      category.description ??
-      `Koleksi ${category.name} pilihan. Pesan lewat WhatsApp, kirim ke seluruh Indonesia.`,
+    title: seo.title,
+    description: seo.description,
+    openGraph: {
+      type: "website",
+      locale: "id_ID",
+      siteName: identity.name,
+      title: seo.title,
+      description: seo.description,
+      url: `/kategori/${slug}`,
+    },
     alternates: searching ? undefined : { canonical: `/kategori/${slug}` },
     robots: searching ? { index: false, follow: true } : undefined,
   };

@@ -4,14 +4,14 @@
  */
 export const siteConfig = {
   name: "Lensara",
-  tagline: "Optik Modern Yogyakarta",
+  tagline: "Optik Modern Madiun",
   description:
     "Toko kacamata online dengan koleksi frame, lensa, dan sunglasses pilihan. Konsultasi gratis, pesan langsung lewat WhatsApp, kirim ke seluruh Indonesia.",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   /** Nomor WhatsApp tujuan pesanan, format internasional tanpa "+" */
   whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "6289679165530",
-  city: "Yogyakarta",
-  address: "Jl. Kaliurang KM 5, Sleman, Daerah Istimewa Yogyakarta",
+  city: "Madiun",
+  address: "Madiun, Jawa Timur",
   email: "halo@lensara.id",
   instagram: "https://instagram.com/",
   openHours: "Setiap hari, 09.00 – 21.00 WIB",

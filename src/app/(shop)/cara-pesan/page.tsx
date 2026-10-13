@@ -5,14 +5,19 @@ import { FaqSection } from "@/components/sections/faq-section";
 import { HowToOrder } from "@/components/sections/how-to-order";
 import { sectionProps } from "@/lib/blocks/resolve";
 import { getSiteIdentity } from "@/lib/data/queries";
+import { pageMetadata } from "@/lib/page-meta";
 import { textVars } from "@/lib/site-identity";
 
-export const metadata: Metadata = {
-  title: "Cara Pesan",
-  alternates: { canonical: "/cara-pesan" },
-  description:
-    "Empat langkah memesan kacamata: pilih produk, kirim ke WhatsApp, konfirmasi pembayaran, lalu barang dikirim.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata("cara-pesan", {
+    fallback: {
+      title: "Cara Pesan",
+      description:
+        "Empat langkah memesan kacamata: pilih produk, kirim ke WhatsApp, konfirmasi pembayaran, lalu barang dikirim.",
+    },
+    canonical: "/cara-pesan",
+  });
+}
 
 export default async function HowToOrderPage() {
   const vars = textVars(await getSiteIdentity());

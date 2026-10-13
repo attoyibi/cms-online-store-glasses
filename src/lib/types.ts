@@ -6,6 +6,9 @@ export type Category = {
   image_url: string | null;
   sort_order: number;
   is_active: boolean;
+  /** Judul untuk Google; kosong = nama kategori. Tidak ada pada data contoh. */
+  seo_title?: string | null;
+  seo_description?: string | null;
   /** Dari database; tidak ada pada data contoh */
   updated_at?: string | null;
 };
@@ -71,6 +74,9 @@ export type Product = {
   lens_width_mm: number | null;
   /** Detail bebas yang hanya ditampilkan, tidak difilter */
   specs: Record<string, string>;
+  /** Judul untuk Google; kosong = nama produk. Tidak ada pada data contoh. */
+  seo_title?: string | null;
+  seo_description?: string | null;
   created_at: string;
   /** Dari database; tidak ada pada data contoh */
   updated_at?: string | null;
@@ -127,4 +133,16 @@ export type SeoSettings = {
   ga4_id: string | null;
   meta_pixel_id: string | null;
   noindex_site: boolean;
+};
+
+/** Halaman statis yang SEO-nya bisa diatur (tabel seo_pages) */
+export const SEO_PAGE_SLUGS = ["beranda", "produk", "tentang", "cara-pesan"] as const;
+export type SeoPageSlug = (typeof SEO_PAGE_SLUGS)[number];
+
+export type SeoPage = {
+  slug: SeoPageSlug;
+  seo_title: string | null;
+  seo_description: string | null;
+  og_image: string | null;
+  noindex: boolean;
 };

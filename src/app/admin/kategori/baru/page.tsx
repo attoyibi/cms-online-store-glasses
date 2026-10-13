@@ -2,10 +2,12 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 import { CategoryForm } from "@/components/admin/category-form";
+import { getSiteIdentity } from "@/lib/data/queries";
 import { requireAdmin } from "@/lib/supabase/admin";
 
 export default async function NewCategoryPage() {
   await requireAdmin();
+  const identity = await getSiteIdentity();
 
   return (
     <div className="space-y-6">
@@ -20,7 +22,9 @@ export default async function NewCategoryPage() {
         <h1 className="text-2xl font-semibold">Tambah Kategori</h1>
       </div>
 
-      <CategoryForm />
+      <CategoryForm
+        seoContext={{ siteUrl: identity.siteUrl, storeName: identity.name }}
+      />
     </div>
   );
 }

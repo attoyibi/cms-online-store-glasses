@@ -7,6 +7,7 @@ import { ProductGrid } from "@/components/catalog/product-grid";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCatalog, getCategories, type ProductSort } from "@/lib/data/queries";
 import { parseFilters } from "@/lib/filters";
+import { pageMetadata } from "@/lib/page-meta";
 
 /**
  * Urutan dan filter (?sort=, ?harga=, dst.) hanyalah tampilan lain dari daftar
@@ -20,13 +21,15 @@ export async function generateMetadata(
   const { q } = await props.searchParams;
   const searching = Boolean(Array.isArray(q) ? q[0] : q);
 
-  return {
-    title: "Semua Produk",
-    description:
-      "Katalog lengkap frame, sunglasses, dan lensa kacamata. Saring berdasarkan bentuk, harga, material, dan warna. Pesan lewat WhatsApp.",
-    alternates: searching ? undefined : { canonical: "/produk" },
-    robots: searching ? { index: false, follow: true } : undefined,
-  };
+  return pageMetadata("produk", {
+    fallback: {
+      title: "Semua Produk",
+      description:
+        "Katalog lengkap frame, sunglasses, dan lensa kacamata. Saring berdasarkan bentuk, harga, material, dan warna. Pesan lewat WhatsApp.",
+    },
+    canonical: "/produk",
+    hide: searching,
+  });
 }
 
 const VALID_SORTS: ProductSort[] = ["terbaru", "termurah", "termahal", "nama"];

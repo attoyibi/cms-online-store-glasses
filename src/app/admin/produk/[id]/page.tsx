@@ -6,6 +6,7 @@ import { deleteProduct } from "@/app/admin/actions";
 import { DeleteButton } from "@/components/admin/delete-button";
 import { ProductForm } from "@/components/admin/product-form";
 import { loadProductFormOptions } from "@/lib/data/admin-queries";
+import { getSiteIdentity } from "@/lib/data/queries";
 import { requireAdmin } from "@/lib/supabase/admin";
 import type { Product, ProductAttribute, ProductVariant } from "@/lib/types";
 
@@ -48,7 +49,10 @@ export default async function EditProductPage(
       .filter((a): a is ProductAttribute => Boolean(a)),
   };
 
-  const { categories, attributes, brands } = await loadProductFormOptions();
+  const [{ categories, attributes, brands }, identity] = await Promise.all([
+    loadProductFormOptions(),
+    getSiteIdentity(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -87,6 +91,7 @@ export default async function EditProductPage(
         attributes={attributes}
         brands={brands}
         product={product}
+        seoContext={{ siteUrl: identity.siteUrl, storeName: identity.name }}
       />
     </div>
   );

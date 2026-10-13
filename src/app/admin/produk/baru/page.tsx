@@ -3,9 +3,13 @@ import { ArrowLeft } from "lucide-react";
 
 import { ProductForm } from "@/components/admin/product-form";
 import { loadProductFormOptions } from "@/lib/data/admin-queries";
+import { getSiteIdentity } from "@/lib/data/queries";
 
 export default async function NewProductPage() {
-  const { categories, attributes, brands } = await loadProductFormOptions();
+  const [{ categories, attributes, brands }, identity] = await Promise.all([
+    loadProductFormOptions(),
+    getSiteIdentity(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -24,6 +28,7 @@ export default async function NewProductPage() {
         categories={categories}
         attributes={attributes}
         brands={brands}
+        seoContext={{ siteUrl: identity.siteUrl, storeName: identity.name }}
       />
     </div>
   );
