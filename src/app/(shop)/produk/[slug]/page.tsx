@@ -10,7 +10,12 @@ import { RecentlyViewed } from "@/components/product/recently-viewed";
 import { Separator } from "@/components/ui/separator";
 import { getProductBySlug, getRelatedProducts } from "@/lib/data/queries";
 import { formatPrice } from "@/lib/format";
-import { jsonLdString, productJsonLd } from "@/lib/seo";
+import {
+  breadcrumbJsonLd,
+  jsonLdString,
+  productJsonLd,
+  shareableImage,
+} from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
 import { priceRange } from "@/lib/variants";
 
@@ -21,15 +26,20 @@ export async function generateMetadata(
   const product = await getProductBySlug(slug);
   if (!product) return { title: "Produk tidak ditemukan" };
 
+  const shareImage = shareableImage(product.images);
+
   return {
     title: product.name,
     description:
       product.description?.slice(0, 155) ??
       `${product.name} — ${formatPrice(product.price)}. Pesan lewat WhatsApp.`,
+    alternates: { canonical: `/produk/${slug}` },
     openGraph: {
       title: product.name,
       description: product.description ?? undefined,
-      images: product.images[0] ? [product.images[0]] : undefined,
+      url: `/produk/${slug}`,
+      // Hanya gambar yang bisa ditampilkan platform sosial (bukan SVG)
+      images: shareImage ? [shareImage] : undefined,
     },
   };
 }
@@ -49,6 +59,26 @@ export default async function ProductDetailPage(
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdString(productJsonLd(product)) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLdString(
+            breadcrumbJsonLd([
+              { name: "Beranda", path: "/" },
+              { name: "Produk", path: "/produk" },
+              ...(product.category
+                ? [
+                    {
+                      name: product.category.name,
+                      path: `/kategori/${product.category.slug}`,
+                    },
+                  ]
+                : []),
+              { name: product.name, path: `/produk/${product.slug}` },
+            ]),
+          ),
+        }}
       />
       <nav aria-label="Breadcrumb" className="mb-7">
         <ol className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">

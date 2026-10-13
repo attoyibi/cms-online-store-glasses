@@ -6,6 +6,8 @@ export type Category = {
   image_url: string | null;
   sort_order: number;
   is_active: boolean;
+  /** Dari database; tidak ada pada data contoh */
+  updated_at?: string | null;
 };
 
 export type AttributeType = "bentuk" | "material" | "warna";
@@ -70,6 +72,8 @@ export type Product = {
   /** Detail bebas yang hanya ditampilkan, tidak difilter */
   specs: Record<string, string>;
   created_at: string;
+  /** Dari database; tidak ada pada data contoh */
+  updated_at?: string | null;
 };
 
 export type StoreSettings = {

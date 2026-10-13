@@ -6,6 +6,7 @@ import { HowToOrder } from "@/components/sections/how-to-order";
 
 export const metadata: Metadata = {
   title: "Cara Pesan",
+  alternates: { canonical: "/cara-pesan" },
   description:
     "Empat langkah memesan kacamata: pilih produk, kirim ke WhatsApp, konfirmasi pembayaran, lalu barang dikirim.",
 };

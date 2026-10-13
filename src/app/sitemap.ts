@@ -16,12 +16,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: absoluteUrl("/tentang"), changeFrequency: "yearly", priority: 0.4 },
     ...categories.map((category) => ({
       url: absoluteUrl(`/kategori/${category.slug}`),
+      lastModified: category.updated_at ?? undefined,
       changeFrequency: "weekly" as const,
       priority: 0.8,
     })),
     ...products.map((product) => ({
       url: absoluteUrl(`/produk/${product.slug}`),
-      lastModified: product.created_at,
+      // Terakhir diubah, bukan tanggal dibuat — sinyal yang lebih jujur bagi Google
+      lastModified: product.updated_at ?? product.created_at,
       changeFrequency: "weekly" as const,
       priority: 0.7,
     })),

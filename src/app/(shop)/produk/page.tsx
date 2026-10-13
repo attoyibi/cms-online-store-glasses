@@ -8,11 +8,26 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getCatalog, getCategories, type ProductSort } from "@/lib/data/queries";
 import { parseFilters } from "@/lib/filters";
 
-export const metadata: Metadata = {
-  title: "Semua Produk",
-  description:
-    "Katalog lengkap frame, sunglasses, dan lensa kacamata. Saring berdasarkan bentuk, harga, material, dan warna. Pesan lewat WhatsApp.",
-};
+/**
+ * Urutan dan filter (?sort=, ?harga=, dst.) hanyalah tampilan lain dari daftar
+ * yang sama, jadi canonical-nya tetap /produk. Hasil PENCARIAN (?q=) berbeda:
+ * isinya tipis dan tak terbatas jumlahnya, jadi tidak diindeks (tetap diikuti
+ * tautannya).
+ */
+export async function generateMetadata(
+  props: PageProps<"/produk">,
+): Promise<Metadata> {
+  const { q } = await props.searchParams;
+  const searching = Boolean(Array.isArray(q) ? q[0] : q);
+
+  return {
+    title: "Semua Produk",
+    description:
+      "Katalog lengkap frame, sunglasses, dan lensa kacamata. Saring berdasarkan bentuk, harga, material, dan warna. Pesan lewat WhatsApp.",
+    alternates: searching ? undefined : { canonical: "/produk" },
+    robots: searching ? { index: false, follow: true } : undefined,
+  };
+}
 
 const VALID_SORTS: ProductSort[] = ["terbaru", "termurah", "termahal", "nama"];
 
