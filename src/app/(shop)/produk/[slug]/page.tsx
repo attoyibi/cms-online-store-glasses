@@ -14,6 +14,7 @@ import {
   getSiteIdentity,
 } from "@/lib/data/queries";
 import { formatPrice } from "@/lib/format";
+import { productSeo } from "@/lib/seo-meta";
 import {
   breadcrumbJsonLd,
   jsonLdString,
@@ -26,20 +27,25 @@ export async function generateMetadata(
   props: PageProps<"/produk/[slug]">,
 ): Promise<Metadata> {
   const { slug } = await props.params;
-  const product = await getProductBySlug(slug);
+  const [product, identity] = await Promise.all([
+    getProductBySlug(slug),
+    getSiteIdentity(),
+  ]);
   if (!product) return { title: "Produk tidak ditemukan" };
 
   const shareImage = shareableImage(product.images);
+  const seo = productSeo(product, identity.city, formatPrice(product.price));
 
   return {
-    title: product.name,
-    description:
-      product.description?.slice(0, 155) ??
-      `${product.name} — ${formatPrice(product.price)}. Pesan lewat WhatsApp.`,
+    title: seo.title,
+    description: seo.description,
     alternates: { canonical: `/produk/${slug}` },
     openGraph: {
-      title: product.name,
-      description: product.description ?? undefined,
+      type: "website",
+      locale: "id_ID",
+      siteName: identity.name,
+      title: seo.title,
+      description: seo.description,
       url: `/produk/${slug}`,
       // Hanya gambar yang bisa ditampilkan platform sosial (bukan SVG)
       images: shareImage ? [shareImage] : undefined,

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { AlertCircle, Loader2 } from "lucide-react";
 
 import { saveCategory, type ActionState } from "@/app/admin/actions";
+import { SeoSnippetFields, type SeoContext } from "@/components/admin/seo-snippet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +22,14 @@ function SubmitButton({ label }: { label: string }) {
   );
 }
 
-export function CategoryForm({ category }: { category?: Category }) {
+export function CategoryForm({
+  category,
+  seoContext,
+}: {
+  category?: Category;
+  /** Alamat situs dan nama toko, untuk pratinjau Google */
+  seoContext: SeoContext;
+}) {
   const [state, formAction] = useActionState<ActionState, FormData>(
     saveCategory,
     {},
@@ -96,6 +104,21 @@ export function CategoryForm({ category }: { category?: Category }) {
           />
         </div>
       </div>
+
+      <fieldset className="space-y-4 border-t pt-5">
+        <legend className="text-sm font-semibold">Tampilan di Google</legend>
+        <SeoSnippetFields
+          context={seoContext}
+          path={`/kategori/${category?.slug ?? "nama-kategori"}`}
+          defaultTitle={category?.seo_title ?? null}
+          defaultDescription={category?.seo_description ?? null}
+          autoTitle={category?.name ?? ""}
+          autoDescription={category?.description ?? ""}
+          watchTitleId="name"
+          watchDescriptionId="description"
+          columnsExist={Boolean(category && "seo_title" in category)}
+        />
+      </fieldset>
 
       <label className="flex items-center gap-2.5 text-sm">
         <input

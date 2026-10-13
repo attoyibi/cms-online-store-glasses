@@ -17,15 +17,7 @@ export default async function AdminSeoPage() {
   const tableMissing = isSchemaMissing(error);
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold">SEO &amp; Toko</h1>
-        <p className="text-sm text-muted-foreground">
-          Atur kota, alamat situs, dan data bisnis agar toko mudah ditemukan di
-          Google. Berlaku untuk seluruh situs.
-        </p>
-      </header>
-
+    <>
       {tableMissing ? (
         <p
           role="alert"
@@ -45,6 +37,6 @@ export default async function AdminSeoPage() {
           storeName={store.store_name}
         />
       )}
-    </div>
+    </>
   );
 }

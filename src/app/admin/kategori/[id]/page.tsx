@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { deleteCategory } from "@/app/admin/actions";
 import { CategoryForm } from "@/components/admin/category-form";
 import { DeleteButton } from "@/components/admin/delete-button";
+import { getSiteIdentity } from "@/lib/data/queries";
 import { requireAdmin } from "@/lib/supabase/admin";
 import type { Category } from "@/lib/types";
 
@@ -22,6 +23,7 @@ export default async function EditCategoryPage(
 
   const category = data as Category | null;
   if (!category) notFound();
+  const identity = await getSiteIdentity();
 
   return (
     <div className="space-y-6">
@@ -46,7 +48,10 @@ export default async function EditCategoryPage(
         </div>
       </div>
 
-      <CategoryForm category={category} />
+      <CategoryForm
+        category={category}
+        seoContext={{ siteUrl: identity.siteUrl, storeName: identity.name }}
+      />
     </div>
   );
 }

@@ -6,15 +6,18 @@ import { Testimonials } from "@/components/sections/testimonials";
 import { TrustBar } from "@/components/sections/trust-bar";
 import { sectionProps } from "@/lib/blocks/resolve";
 import { getSiteIdentity } from "@/lib/data/queries";
+import { pageMetadata } from "@/lib/page-meta";
 import { textVars } from "@/lib/site-identity";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { city } = await getSiteIdentity();
-  return {
-    title: "Tentang Kami",
-    alternates: { canonical: "/tentang" },
-    description: `Optik kecil dari ${city} yang menyeleksi sendiri setiap frame sebelum masuk katalog.`,
-  };
+  return pageMetadata("tentang", {
+    fallback: {
+      title: "Tentang Kami",
+      description: `Optik kecil dari ${city} yang menyeleksi sendiri setiap frame sebelum masuk katalog.`,
+    },
+    canonical: "/tentang",
+  });
 }
 
 export default async function AboutPage() {

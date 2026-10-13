@@ -1,5 +1,11 @@
 import { isAllowedImage } from "@/lib/blocks/normalize";
-import type { SeoSettings } from "@/lib/types";
+import { SEO_DESC_MAX, SEO_TITLE_MAX } from "@/lib/seo-meta";
+import {
+  SEO_PAGE_SLUGS,
+  type SeoPage,
+  type SeoPageSlug,
+  type SeoSettings,
+} from "@/lib/types";
 
 /** Isi form SEO yang sudah dirapikan, siap disimpan (tanpa id). */
 export type SeoInput = Omit<SeoSettings, "id">;
@@ -256,6 +262,67 @@ export function parseSeoForm(raw: RawSeoForm): SeoParse {
       ga4_id: ga4 || null,
       meta_pixel_id: pixel || null,
       noindex_site: noindex === "on" || noindex === "true",
+    },
+  };
+}
+
+// ------------------------------------------------ judul & deskripsi per halaman
+
+export type SnippetParse =
+  | { ok: true; seo_title: string | null; seo_description: string | null }
+  | { ok: false; error: string };
+
+/** Judul dan deskripsi untuk Google (produk, kategori, halaman). Kosong = otomatis. */
+export function parseSnippet(title: string, description: string): SnippetParse {
+  const t = title.replace(/\s+/g, " ").trim();
+  const d = description.replace(/\s+/g, " ").trim();
+  if (t.length > SEO_TITLE_MAX) {
+    return { ok: false, error: `Judul untuk Google maksimal ${SEO_TITLE_MAX} karakter.` };
+  }
+  if (d.length > SEO_DESC_MAX) {
+    return { ok: false, error: `Deskripsi untuk Google maksimal ${SEO_DESC_MAX} karakter.` };
+  }
+  return { ok: true, seo_title: t || null, seo_description: d || null };
+}
+
+export type SeoPageParse =
+  | {
+      ok: true;
+      slug: SeoPageSlug;
+      value: Omit<SeoPage, "slug">;
+    }
+  | { ok: false; error: string };
+
+export function parseSeoPageForm(raw: RawSeoForm): SeoPageParse {
+  const slug = text(raw, "slug");
+  if (!(SEO_PAGE_SLUGS as readonly string[]).includes(slug)) {
+    return { ok: false, error: "Halaman tidak dikenali." };
+  }
+
+  const snippet = parseSnippet(text(raw, "seo_title"), text(raw, "seo_description"));
+  if (!snippet.ok) return snippet;
+
+  const ogImage = text(raw, "og_image");
+  if (ogImage) {
+    if (!isAllowedImage(ogImage)) {
+      return {
+        ok: false,
+        error: "Gambar bagikan: pakai gambar yang diunggah lewat panel ini atau file milik situs (diawali /).",
+      };
+    }
+    if (/\.svg($|\?)/i.test(ogImage)) {
+      return { ok: false, error: "Gambar bagikan: format SVG tidak dikenali WhatsApp dan Google. Pakai PNG atau JPG." };
+    }
+  }
+
+  return {
+    ok: true,
+    slug: slug as SeoPageSlug,
+    value: {
+      seo_title: snippet.seo_title,
+      seo_description: snippet.seo_description,
+      og_image: ogImage || null,
+      noindex: ["on", "true"].includes(text(raw, "noindex")),
     },
   };
 }

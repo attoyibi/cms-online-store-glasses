@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { slugify } from "@/lib/format";
-import { parseSeoForm, type RawSeoForm } from "@/lib/seo-validate";
+import {
+  parseSeoForm,
+  parseSeoPageForm,
+  parseSnippet,
+  type RawSeoForm,
+} from "@/lib/seo-validate";
 import { requireAdmin } from "@/lib/supabase/admin";
 import { isSchemaMissing } from "@/lib/supabase/env";
 import { describeAuthError, describeError } from "@/lib/supabase/errors";
@@ -134,6 +139,43 @@ function parseVariants(raw: string): {
   }
 
   return { variants, error: null };
+}
+
+/**
+ * Judul dan deskripsi untuk Google dari form produk/kategori. Kolomnya baru
+ * ada sesudah setup.sql v8 dijalankan, jadi nilainya hanya ikut disimpan bila
+ * diisi, atau bila form menandai (seo_present) bahwa kolomnya sudah ada —
+ * supaya menyimpan produk tetap bekerja sebelum SQL terbaru dijalankan.
+ */
+function seoSnippet(
+  formData: FormData,
+): { error: string } | { fields: Record<string, string | null> } {
+  const parsed = parseSnippet(
+    String(formData.get("seo_title") ?? ""),
+    String(formData.get("seo_description") ?? ""),
+  );
+  if (!parsed.ok) return { error: parsed.error };
+
+  const present = formData.get("seo_present") === "1";
+  if (!present && !parsed.seo_title && !parsed.seo_description) {
+    return { fields: {} };
+  }
+  return {
+    fields: {
+      seo_title: parsed.seo_title,
+      seo_description: parsed.seo_description,
+    },
+  };
+}
+
+const SEO_COLUMN_HINT =
+  "Kolom SEO belum ada di database. Jalankan supabase/setup.sql versi terbaru di SQL Editor Supabase (aman dijalankan berulang), lalu simpan lagi.";
+
+/** Pesan khusus bila penyimpanan gagal karena kolom seo_* belum dibuat */
+function seoColumnMissing(error: { code?: string; message?: string } | null) {
+  return (
+    error?.code === "PGRST204" && /seo_(title|description)/.test(error.message ?? "")
+  );
 }
 
 function productPayload(formData: FormData) {
@@ -276,7 +318,9 @@ export async function createProduct(
   formData: FormData,
 ): Promise<ActionState> {
   const { supabase } = await requireAdmin();
-  const payload = productPayload(formData);
+  const snippet = seoSnippet(formData);
+  if ("error" in snippet) return { error: snippet.error };
+  const payload = { ...productPayload(formData), ...snippet.fields };
   const parsedVariants = parseVariants(String(formData.get("variants") ?? ""));
   if (parsedVariants.error) return { error: parsedVariants.error };
 
@@ -294,7 +338,9 @@ export async function createProduct(
       error:
         error?.code === "23505"
           ? "Slug sudah dipakai produk lain."
-          : describeError(error),
+          : seoColumnMissing(error)
+            ? SEO_COLUMN_HINT
+            : describeError(error),
     };
   }
 
@@ -324,7 +370,9 @@ export async function updateProduct(
   const id = String(formData.get("id") ?? "");
   if (!id) return { error: "Produk tidak ditemukan." };
 
-  const payload = productPayload(formData);
+  const snippet = seoSnippet(formData);
+  if ("error" in snippet) return { error: snippet.error };
+  const payload = { ...productPayload(formData), ...snippet.fields };
   const parsedVariants = parseVariants(String(formData.get("variants") ?? ""));
   if (parsedVariants.error) return { error: parsedVariants.error };
 
@@ -341,7 +389,9 @@ export async function updateProduct(
       error:
         error.code === "23505"
           ? "Slug sudah dipakai produk lain."
-          : describeError(error),
+          : seoColumnMissing(error)
+            ? SEO_COLUMN_HINT
+            : describeError(error),
     };
   }
 
@@ -402,7 +452,9 @@ export async function saveCategory(
 ): Promise<ActionState> {
   const { supabase } = await requireAdmin();
   const id = String(formData.get("id") ?? "");
-  const payload = categoryPayload(formData);
+  const snippet = seoSnippet(formData);
+  if ("error" in snippet) return { error: snippet.error };
+  const payload = { ...categoryPayload(formData), ...snippet.fields };
 
   if (!payload.name) return { error: "Nama kategori wajib diisi." };
   if (!payload.slug) return { error: "Slug tidak valid." };
@@ -416,7 +468,9 @@ export async function saveCategory(
       error:
         error.code === "23505"
           ? "Slug sudah dipakai kategori lain."
-          : describeError(error),
+          : seoColumnMissing(error)
+            ? SEO_COLUMN_HINT
+            : describeError(error),
     };
   }
 
@@ -565,4 +619,37 @@ export async function saveSeoSettings(
 
   revalidateShop();
   return { success: "Pengaturan SEO tersimpan." };
+}
+
+export async function saveSeoPage(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const { supabase } = await requireAdmin();
+
+  const raw: RawSeoForm = {};
+  for (const key of new Set(formData.keys())) {
+    const values = formData
+      .getAll(key)
+      .filter((value): value is string => typeof value === "string");
+    raw[key] = values.length > 1 ? values : values[0];
+  }
+
+  const parsed = parseSeoPageForm(raw);
+  if (!parsed.ok) return { error: parsed.error };
+
+  const { error } = await supabase
+    .from("seo_pages")
+    .upsert({ slug: parsed.slug, ...parsed.value }, { onConflict: "slug" });
+
+  if (isSchemaMissing(error)) {
+    return {
+      error:
+        "Tabel SEO halaman belum ada di database. Jalankan supabase/setup.sql versi terbaru di SQL Editor Supabase (aman dijalankan berulang), lalu simpan lagi.",
+    };
+  }
+  if (error) return { error: describeError(error) };
+
+  revalidateShop();
+  return { success: "SEO halaman tersimpan." };
 }

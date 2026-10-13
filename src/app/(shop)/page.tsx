@@ -2,10 +2,14 @@ import type { Metadata } from "next";
 
 import { BlockRenderer } from "@/components/blocks/block-renderer";
 import { getPublishedBlocks, getSiteIdentity } from "@/lib/data/queries";
+import { pageMetadata } from "@/lib/page-meta";
 import { jsonLdString, localBusinessJsonLd, websiteJsonLd } from "@/lib/seo";
 
-// Judul dan deskripsi beranda berasal dari layout; di sini hanya penanda alamat resmi
-export const metadata: Metadata = { alternates: { canonical: "/" } };
+// Tanpa isian di Admin → SEO & Toko → Halaman, judul dan deskripsi beranda
+// berasal dari layout; di sini hanya penanda alamat resmi.
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata("beranda", { canonical: "/", absoluteTitle: true });
+}
 
 /**
  * Halaman depan dirakit dari daftar blok yang bisa diatur di

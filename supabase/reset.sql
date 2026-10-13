@@ -27,6 +27,7 @@ drop policy if exists "product images admin write" on storage.objects;
 delete from storage.objects where bucket_id = 'product-images';
 delete from storage.buckets where id = 'product-images';
 
+drop table if exists public.seo_pages               cascade;
 drop table if exists public.seo_settings            cascade;
 drop table if exists public.site_page_drafts        cascade;
 drop table if exists public.site_pages              cascade;

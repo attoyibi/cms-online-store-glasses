@@ -12,6 +12,7 @@ import {
 } from "@/app/admin/actions";
 import { AttributePicker } from "@/components/admin/attribute-picker";
 import { ImageUploader } from "@/components/admin/image-uploader";
+import { SeoSnippetFields, type SeoContext } from "@/components/admin/seo-snippet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,12 +36,15 @@ export function ProductForm({
   attributes,
   brands,
   product,
+  seoContext,
 }: {
   categories: Category[];
   attributes: ProductAttribute[];
   /** Merek yang sudah dipakai, jadi saran agar ejaannya konsisten */
   brands: string[];
   product?: Product;
+  /** Alamat situs dan nama toko, untuk pratinjau Google */
+  seoContext: SeoContext;
 }) {
   const isEdit = Boolean(product);
   const [state, formAction] = useActionState<ActionState, FormData>(
@@ -263,6 +267,21 @@ export function ProductForm({
             titik dua akan diabaikan.
           </p>
         </div>
+      </fieldset>
+
+      <fieldset className="space-y-4 border-t pt-6">
+        <legend className="text-sm font-semibold">Tampilan di Google</legend>
+        <SeoSnippetFields
+          context={seoContext}
+          path={`/produk/${product?.slug ?? "nama-produk"}`}
+          defaultTitle={product?.seo_title ?? null}
+          defaultDescription={product?.seo_description ?? null}
+          autoTitle={product?.name ?? ""}
+          autoDescription={product?.description ?? ""}
+          watchTitleId="name"
+          watchDescriptionId="description"
+          columnsExist={Boolean(product && "seo_title" in product)}
+        />
       </fieldset>
 
       <fieldset className="space-y-3 border-t pt-6">

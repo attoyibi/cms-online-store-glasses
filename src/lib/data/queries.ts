@@ -26,6 +26,8 @@ import type {
   Product,
   ProductAttribute,
   ProductVariant,
+  SeoPage,
+  SeoPageSlug,
   SeoSettings,
   StoreSettings,
 } from "@/lib/types";
@@ -356,6 +358,24 @@ export const getSeoSettings = cache(async (): Promise<SeoSettings | null> => {
   if (error || !data) return null;
   return data as SeoSettings;
 });
+
+/**
+ * SEO halaman statis (beranda, produk, tentang, cara pesan). Daftar kosong
+ * bila belum diatur atau tabelnya belum ada — halaman lalu memakai judul
+ * dan deskripsi bawaannya.
+ */
+export const getSeoPages = cache(async (): Promise<SeoPage[]> => {
+  const supabase = await createClient();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase.from("seo_pages").select("*");
+  if (error || !data) return [];
+  return data as SeoPage[];
+});
+
+export async function getSeoPage(slug: SeoPageSlug): Promise<SeoPage | null> {
+  return (await getSeoPages()).find((page) => page.slug === slug) ?? null;
+}
 
 /** Identitas toko lengkap (nama, kota, alamat situs, dst.) untuk metadata & data terstruktur */
 export const getSiteIdentity = cache(async (): Promise<SiteIdentity> => {
