@@ -77,6 +77,8 @@ export type Product = {
   /** Judul untuk Google; kosong = nama produk. Tidak ada pada data contoh. */
   seo_title?: string | null;
   seo_description?: string | null;
+  /** Teks alternatif foto: { "url foto": "teks" }. Tidak ada pada data contoh. */
+  image_alts?: Record<string, string> | null;
   created_at: string;
   /** Dari database; tidak ada pada data contoh */
   updated_at?: string | null;

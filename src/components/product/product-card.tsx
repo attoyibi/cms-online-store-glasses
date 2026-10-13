@@ -4,6 +4,7 @@ import { AddToCartButton } from "@/components/product/add-to-cart-button";
 import { ProductImage } from "@/components/product/product-image";
 import { Button } from "@/components/ui/button";
 import { discountPercent, formatPrice } from "@/lib/format";
+import { imageAlt } from "@/lib/image-alt";
 import type { Product } from "@/lib/types";
 import { hasVariants, priceRange } from "@/lib/variants";
 import { cn } from "@/lib/utils";
@@ -28,7 +29,7 @@ export function ProductCard({
         <div className="relative aspect-4/5">
           <ProductImage
             src={product.images[0]}
-            alt={product.name}
+            alt={imageAlt(product, 0)}
             sizes="(min-width: 1280px) 20vw, (min-width: 768px) 30vw, 45vw"
             priority={priority}
             className="transition-transform duration-500 ease-out group-hover:scale-105"

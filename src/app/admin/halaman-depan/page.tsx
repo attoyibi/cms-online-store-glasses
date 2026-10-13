@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import {
   discardHomeDraft,
@@ -26,9 +27,9 @@ export default async function HomePageEditorPage() {
           Tip: tulis <code className="font-mono">{"{kota}"}</code> atau{" "}
           <code className="font-mono">{"{toko}"}</code> di teks mana pun, dan
           otomatis diganti dengan kota dan nama toko dari{" "}
-          <a href="/admin/seo" className="font-medium underline">
+          <Link href="/admin/seo" className="font-medium underline">
             SEO &amp; Toko
-          </a>
+          </Link>
           .
         </p>
       </div>

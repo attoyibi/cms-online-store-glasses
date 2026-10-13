@@ -29,7 +29,7 @@ export type AuditInput = {
   seo: SeoSettings | null;
   products: Pick<
     Product,
-    "id" | "name" | "slug" | "description" | "images" | "category_id" | "is_active" | "seo_title" | "seo_description"
+    "id" | "name" | "slug" | "description" | "images" | "category_id" | "is_active" | "seo_title" | "seo_description" | "image_alts"
   >[];
   categories: Pick<
     Category,
@@ -224,6 +224,20 @@ export function auditSeo(input: AuditInput): AuditResult {
         subject,
         title: "Semua fotonya SVG (gambar contoh)",
         fix: "Ganti dengan foto PNG/JPG. SVG tidak tampil saat tautan dibagikan di WhatsApp dan tidak masuk Google Gambar.",
+        href,
+      });
+    }
+
+    const usable = p.images.filter((src) => !isSvg(src));
+    const described = usable.filter((src) => norm(p.image_alts?.[src]).length > 0);
+    if (usable.length > 0 && described.length === 0) {
+      add({
+        id: `produk-alt-${p.id}`,
+        level: "info",
+        area: "produk",
+        subject,
+        title: "Foto belum diberi teks alternatif",
+        fix: "Tulis satu kalimat tentang isi tiap foto (mis. “Frame persegi hitam tampak depan”). Dipakai pembaca layar dan Google Gambar; sekarang dipakai nama produk.",
         href,
       });
     }

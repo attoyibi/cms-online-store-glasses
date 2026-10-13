@@ -377,6 +377,28 @@ export async function getSeoPage(slug: SeoPageSlug): Promise<SeoPage | null> {
   return (await getSeoPages()).find((page) => page.slug === slug) ?? null;
 }
 
+/**
+ * Tujuan pengalihan untuk sebuah alamat yang tidak ditemukan, atau null.
+ * Hanya dipanggil dari halaman yang akan menjawab 404, jadi tidak menambah
+ * beban pada halaman yang normal. Tabel belum ada / galat = tidak ada
+ * pengalihan.
+ */
+export async function findRedirect(path: string): Promise<string | null> {
+  if (path.length > 200) return null;
+
+  const supabase = await createClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("seo_redirects")
+    .select("to_path")
+    .eq("from_path", path)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return (data as { to_path: string }).to_path;
+}
+
 /** Identitas toko lengkap (nama, kota, alamat situs, dst.) untuk metadata & data terstruktur */
 export const getSiteIdentity = cache(async (): Promise<SiteIdentity> => {
   const [store, seo] = await Promise.all([getStoreSettings(), getSeoSettings()]);
