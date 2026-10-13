@@ -2,7 +2,12 @@ import { Fragment } from "react";
 
 import { BlockView, priorityShowcaseId } from "@/components/blocks/block-view";
 import type { Block } from "@/lib/blocks/types";
-import { getCategories, getProducts } from "@/lib/data/queries";
+import {
+  getCategories,
+  getProducts,
+  getSiteIdentity,
+} from "@/lib/data/queries";
+import { resolveVarsDeep, textVars } from "@/lib/site-identity";
 import type { Category, Product } from "@/lib/types";
 
 type BlockData = { products: Product[]; categories: Category[] };
@@ -49,7 +54,12 @@ async function loadData(block: Block): Promise<BlockData> {
  * data tiap blok diambil bersamaan lalu diserahkan ke `BlockView`.
  */
 export async function BlockRenderer({ blocks }: { blocks: Block[] }) {
-  const visible = blocks.filter((block) => !block.hidden);
+  // {kota}, {toko}, {provinsi} di teks blok diganti dengan identitas toko ini
+  const vars = textVars(await getSiteIdentity());
+  const visible = resolveVarsDeep(
+    blocks.filter((block) => !block.hidden),
+    vars,
+  );
   const priorityId = priorityShowcaseId(blocks);
 
   const data = await Promise.all(visible.map(loadData));

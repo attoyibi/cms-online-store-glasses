@@ -2,16 +2,18 @@ import Link from "next/link";
 import { Clock, Mail, MapPin, MessageCircle } from "lucide-react";
 
 import { InstagramIcon } from "@/components/icons";
-import { siteConfig } from "@/lib/site-config";
 import type { Category, StoreSettings } from "@/lib/types";
 import { normalizeWaNumber, waLink } from "@/lib/whatsapp";
 
 export function SiteFooter({
   categories,
   settings,
+  description,
 }: {
   categories: Category[];
   settings: StoreSettings;
+  /** Deskripsi singkat toko, dari Admin → SEO & Toko */
+  description: string;
 }) {
   const waHref = waLink(
     settings.whatsapp_number,
@@ -26,7 +28,7 @@ export function SiteFooter({
             {settings.store_name}
           </p>
           <p className="max-w-xs text-sm leading-relaxed text-ink-foreground/70">
-            {siteConfig.description}
+            {description}
           </p>
           <div className="flex gap-2 pt-1">
             <a

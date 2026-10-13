@@ -8,7 +8,11 @@ import { ProductGallery } from "@/components/product/product-gallery";
 import { ProductBuyBox } from "@/components/product/product-buy-box";
 import { RecentlyViewed } from "@/components/product/recently-viewed";
 import { Separator } from "@/components/ui/separator";
-import { getProductBySlug, getRelatedProducts } from "@/lib/data/queries";
+import {
+  getProductBySlug,
+  getRelatedProducts,
+  getSiteIdentity,
+} from "@/lib/data/queries";
 import { formatPrice } from "@/lib/format";
 import {
   breadcrumbJsonLd,
@@ -16,7 +20,6 @@ import {
   productJsonLd,
   shareableImage,
 } from "@/lib/seo";
-import { siteConfig } from "@/lib/site-config";
 import { priceRange } from "@/lib/variants";
 
 export async function generateMetadata(
@@ -51,14 +54,18 @@ export default async function ProductDetailPage(
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
-  const related = await getRelatedProducts(product, 4);
+  const [related, identity] = await Promise.all([
+    getRelatedProducts(product, 4),
+    getSiteIdentity(),
+  ]);
+  const base = identity.siteUrl;
   const specs = Object.entries(product.specs);
 
   return (
     <div className="container-page py-8 sm:py-12">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdString(productJsonLd(product)) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdString(productJsonLd(product, base)) }}
       />
       <script
         type="application/ld+json"
@@ -76,7 +83,7 @@ export default async function ProductDetailPage(
                   ]
                 : []),
               { name: product.name, path: `/produk/${product.slug}` },
-            ]),
+            ], base),
           ),
         }}
       />
@@ -135,7 +142,7 @@ export default async function ProductDetailPage(
 
           <ProductBuyBox
             product={product}
-            url={`${siteConfig.url}/produk/${product.slug}`}
+            url={`${base}/produk/${product.slug}`}
           />
 
           {product.description && (

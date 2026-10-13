@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 
 import { LivePreview } from "@/components/blocks/live-preview";
 import { loadHomeEditorState } from "@/lib/data/admin-queries";
-import { getCategories, getProducts } from "@/lib/data/queries";
+import {
+  getCategories,
+  getProducts,
+  getSiteIdentity,
+} from "@/lib/data/queries";
+import { textVars } from "@/lib/site-identity";
 
 export const metadata: Metadata = {
   title: "Pratinjau langsung",
@@ -20,9 +25,10 @@ export const metadata: Metadata = {
  */
 export default async function LivePreviewPage() {
   const state = await loadHomeEditorState();
-  const [products, categories] = await Promise.all([
+  const [products, categories, identity] = await Promise.all([
     getProducts({ limit: 200 }),
     getCategories(),
+    getSiteIdentity(),
   ]);
 
   return (
@@ -30,6 +36,7 @@ export default async function LivePreviewPage() {
       initialBlocks={state.blocks}
       products={products}
       categories={categories}
+      vars={textVars(identity)}
     />
   );
 }

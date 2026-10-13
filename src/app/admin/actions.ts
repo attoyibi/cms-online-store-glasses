@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { slugify } from "@/lib/format";
+import { parseSeoForm, type RawSeoForm } from "@/lib/seo-validate";
 import { requireAdmin } from "@/lib/supabase/admin";
 import { isSchemaMissing } from "@/lib/supabase/env";
 import { describeAuthError, describeError } from "@/lib/supabase/errors";
@@ -528,4 +529,40 @@ export async function saveSettings(
 
   revalidateShop();
   return { success: "Pengaturan tersimpan." };
+}
+
+// ----------------------------------------------------------------- seo
+
+export async function saveSeoSettings(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const { supabase } = await requireAdmin();
+
+  const raw: RawSeoForm = {};
+  for (const key of new Set(formData.keys())) {
+    const values = formData
+      .getAll(key)
+      .filter((value): value is string => typeof value === "string");
+    raw[key] = values.length > 1 ? values : values[0];
+  }
+
+  const parsed = parseSeoForm(raw);
+  if (!parsed.ok) return { error: parsed.error };
+
+  const id = String(formData.get("id") ?? "");
+  const { error } = id
+    ? await supabase.from("seo_settings").update(parsed.value).eq("id", id)
+    : await supabase.from("seo_settings").insert(parsed.value);
+
+  if (isSchemaMissing(error)) {
+    return {
+      error:
+        "Tabel pengaturan SEO belum ada di database. Jalankan supabase/setup.sql versi terbaru di SQL Editor Supabase (aman dijalankan berulang), lalu simpan lagi.",
+    };
+  }
+  if (error) return { error: describeError(error) };
+
+  revalidateShop();
+  return { success: "Pengaturan SEO tersimpan." };
 }

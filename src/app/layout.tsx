@@ -3,8 +3,8 @@ import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 
 import { StoreSettingsProvider } from "@/components/store-settings-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { getStoreSettings } from "@/lib/data/queries";
-import { siteConfig } from "@/lib/site-config";
+import { getSiteIdentity, getStoreSettings } from "@/lib/data/queries";
+import { absoluteUrl } from "@/lib/seo";
 
 import "./globals.css";
 
@@ -20,31 +20,43 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteConfig.url),
-  title: {
-    default: `${siteConfig.name} — ${siteConfig.tagline}`,
-    template: `%s | ${siteConfig.name}`,
-  },
-  description: siteConfig.description,
-  keywords: [
-    "kacamata",
-    "toko kacamata online",
-    "optik yogyakarta",
-    "frame kacamata",
-    "lensa kacamata",
-    "sunglasses",
-  ],
-  openGraph: {
-    type: "website",
-    locale: "id_ID",
-    url: siteConfig.url,
-    siteName: siteConfig.name,
-    title: `${siteConfig.name} — ${siteConfig.tagline}`,
-    description: siteConfig.description,
-  },
-  robots: { index: true, follow: true },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const id = await getSiteIdentity();
+  const title = `${id.name} — ${id.tagline}`;
+  const ogImage = id.ogImage ? absoluteUrl(id.ogImage, id.siteUrl) : undefined;
+
+  return {
+    metadataBase: new URL(id.siteUrl),
+    title: { default: title, template: `%s | ${id.name}` },
+    description: id.description,
+    keywords: [
+      "kacamata",
+      "toko kacamata online",
+      `optik ${id.city.toLowerCase()}`,
+      "frame kacamata",
+      "lensa kacamata",
+      "sunglasses",
+    ],
+    openGraph: {
+      type: "website",
+      locale: "id_ID",
+      url: id.siteUrl,
+      siteName: id.name,
+      title,
+      description: id.description,
+      images: ogImage ? [{ url: ogImage }] : undefined,
+    },
+    robots: id.noindexSite
+      ? { index: false, follow: false }
+      : { index: true, follow: true },
+    verification: {
+      google: id.googleVerification ?? undefined,
+      other: id.bingVerification
+        ? { "msvalidate.01": id.bingVerification }
+        : undefined,
+    },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: [

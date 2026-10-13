@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import {
   sampleAttributes,
   sampleCategories,
@@ -14,6 +16,7 @@ import {
   type CatalogFilters,
   type Facets,
 } from "@/lib/filters";
+import { buildIdentity, type SiteIdentity } from "@/lib/site-identity";
 import { siteConfig } from "@/lib/site-config";
 import { withVariantSummary } from "@/lib/variants";
 import { isSchemaMissing } from "@/lib/supabase/env";
@@ -23,6 +26,7 @@ import type {
   Product,
   ProductAttribute,
   ProductVariant,
+  SeoSettings,
   StoreSettings,
 } from "@/lib/types";
 
@@ -141,7 +145,8 @@ export async function getAttributes(): Promise<ProductAttribute[]> {
   return data as ProductAttribute[];
 }
 
-export async function getCategories(): Promise<Category[]> {
+/** Dibungkus cache(): layout, sitemap, dan halaman memanggilnya di request yang sama */
+export const getCategories = cache(async (): Promise<Category[]> => {
   const supabase = await createClient();
   if (!supabase) return sampleCategoryList();
 
@@ -154,7 +159,7 @@ export async function getCategories(): Promise<Category[]> {
   if (isSchemaMissing(error)) return sampleCategoryList();
   if (error || !data) return [];
   return data as Category[];
-}
+});
 
 export async function getCategoryBySlug(
   slug: string,
@@ -309,7 +314,7 @@ export async function getRelatedProducts(
   return rows.filter((p) => p.id !== product.id).slice(0, limit);
 }
 
-export async function getStoreSettings(): Promise<StoreSettings> {
+export const getStoreSettings = cache(async (): Promise<StoreSettings> => {
   const fallback: StoreSettings = {
     id: "default",
     store_name: siteConfig.name,
@@ -331,7 +336,32 @@ export async function getStoreSettings(): Promise<StoreSettings> {
     .maybeSingle();
 
   return (data as StoreSettings | null) ?? fallback;
-}
+});
+
+/**
+ * Pengaturan SEO & bisnis lokal. Null bila belum diisi, tabelnya belum ada
+ * (setup.sql lama), atau Supabase belum dikonfigurasi — pemanggil lalu
+ * memakai nilai bawaan, jadi situs tidak pernah gagal gara-gara ini.
+ */
+export const getSeoSettings = cache(async (): Promise<SeoSettings | null> => {
+  const supabase = await createClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("seo_settings")
+    .select("*")
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as SeoSettings;
+});
+
+/** Identitas toko lengkap (nama, kota, alamat situs, dst.) untuk metadata & data terstruktur */
+export const getSiteIdentity = cache(async (): Promise<SiteIdentity> => {
+  const [store, seo] = await Promise.all([getStoreSettings(), getSeoSettings()]);
+  return buildIdentity(store, seo);
+});
 
 /**
  * Apakah kredensial sudah diisi tapi migrasi SQL-nya belum dijalankan.
