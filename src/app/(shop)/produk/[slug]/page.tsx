@@ -14,6 +14,8 @@ import {
   getSiteIdentity,
 } from "@/lib/data/queries";
 import { formatPrice } from "@/lib/format";
+import { imageAlts } from "@/lib/image-alt";
+import { redirectIfMoved } from "@/lib/redirect-if-moved";
 import { productSeo } from "@/lib/seo-meta";
 import {
   breadcrumbJsonLd,
@@ -58,7 +60,10 @@ export default async function ProductDetailPage(
 ) {
   const { slug } = await props.params;
   const product = await getProductBySlug(slug);
-  if (!product) notFound();
+  if (!product) {
+    await redirectIfMoved(`/produk/${slug}`);
+    notFound();
+  }
 
   const [related, identity] = await Promise.all([
     getRelatedProducts(product, 4),
@@ -130,7 +135,7 @@ export default async function ProductDetailPage(
       </nav>
 
       <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
-        <ProductGallery images={product.images} alt={product.name} />
+        <ProductGallery images={product.images} alts={imageAlts(product)} />
 
         <div className="space-y-6">
           <div className="space-y-3">

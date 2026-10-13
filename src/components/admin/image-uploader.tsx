@@ -25,6 +25,10 @@ export function ImageUploader({
   defaultValue,
   onChange,
   single = false,
+  altName,
+  defaultAlts,
+  altsColumnExists = false,
+  altFallback,
 }: {
   name: string;
   defaultValue: string[];
@@ -32,9 +36,20 @@ export function ImageUploader({
   onChange?: (images: string[]) => void;
   /** Hanya satu gambar: unggahan atau URL baru menggantikan yang lama */
   single?: boolean;
+  /**
+   * Nama kolom form untuk teks alternatif foto (JSON { url: teks }). Bila
+   * diisi, tiap foto mendapat kotak teks alternatif.
+   */
+  altName?: string;
+  defaultAlts?: Record<string, string>;
+  /** Kolom image_alts sudah ada di database (terdeteksi dari baris produk) */
+  altsColumnExists?: boolean;
+  /** Teks yang dipakai bila kotak dikosongkan, mis. nama produk */
+  altFallback?: string;
 }) {
   const inputId = useId();
   const [images, setImagesState] = useState<string[]>(defaultValue);
+  const [alts, setAlts] = useState<Record<string, string>>(defaultAlts ?? {});
   const latest = useRef<string[]>(defaultValue);
 
   function setImages(next: string[]) {
@@ -110,6 +125,22 @@ export function ImageUploader({
   return (
     <div className="space-y-4">
       <input type="hidden" name={name} value={images.join("\n")} />
+      {altName && (
+        <>
+          <input
+            type="hidden"
+            name={altName}
+            value={JSON.stringify(
+              Object.fromEntries(
+                images
+                  .filter((url) => alts[url]?.trim())
+                  .map((url) => [url, alts[url]]),
+              ),
+            )}
+          />
+          {altsColumnExists && <input type="hidden" name="alts_present" value="1" />}
+        </>
+      )}
 
       {error && (
         <p role="alert" className="text-sm text-destructive">
@@ -118,10 +149,13 @@ export function ImageUploader({
       )}
 
       {images.length > 0 && (
-        <ul className="flex flex-wrap gap-3">
+        <ul className={altName ? "space-y-3" : "flex flex-wrap gap-3"}>
           {images.map((url, index) => (
-            <li key={`${url}-${index}`} className="group relative">
-              <div className="relative size-24 overflow-hidden rounded-xl border bg-muted">
+            <li
+              key={`${url}-${index}`}
+              className={cn("group relative", altName && "flex items-start gap-3")}
+            >
+              <div className="relative size-24 shrink-0 overflow-hidden rounded-xl border bg-muted">
                 <Image
                   src={url}
                   alt={`Gambar ${index + 1}`}
@@ -148,6 +182,35 @@ export function ImageUploader({
               >
                 <X className="size-3" aria-hidden="true" />
               </button>
+
+              {altName && (
+                <div className="min-w-0 flex-1 space-y-1 pt-1">
+                  <label
+                    htmlFor={`${inputId}-alt-${index}`}
+                    className="text-xs font-medium"
+                  >
+                    Teks alternatif foto {index + 1}
+                  </label>
+                  <Input
+                    id={`${inputId}-alt-${index}`}
+                    value={alts[url] ?? ""}
+                    maxLength={125}
+                    onChange={(event) =>
+                      setAlts((current) => ({ ...current, [url]: event.target.value }))
+                    }
+                    placeholder={
+                      index === 0
+                        ? altFallback || "Deskripsikan isi foto"
+                        : `${altFallback || "Produk"} — foto ${index + 1}`
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Jelaskan yang terlihat di foto, mis. “Frame persegi hitam
+                    tampak depan”. Dibaca pembaca layar dan dipakai Google Gambar.
+                    Kosong = otomatis.
+                  </p>
+                </div>
+              )}
             </li>
           ))}
         </ul>

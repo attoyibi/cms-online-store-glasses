@@ -16,6 +16,7 @@ import {
   type ProductSort,
 } from "@/lib/data/queries";
 import { parseFilters } from "@/lib/filters";
+import { redirectIfMoved } from "@/lib/redirect-if-moved";
 import { categorySeo } from "@/lib/seo-meta";
 
 const VALID_SORTS: ProductSort[] = ["terbaru", "termurah", "termahal", "nama"];
@@ -71,7 +72,10 @@ export default async function CategoryPage(
   ]);
 
   const category = await getCategoryBySlug(slug);
-  if (!category) notFound();
+  if (!category) {
+    await redirectIfMoved(`/kategori/${slug}`);
+    notFound();
+  }
 
   const search = Array.isArray(searchParams.q)
     ? searchParams.q[0]

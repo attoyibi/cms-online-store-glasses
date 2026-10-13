@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { getSiteIdentity } from "@/lib/data/queries";
 import { slugify } from "@/lib/format";
+import { parseImageAlts } from "@/lib/image-alt";
+import { entityPath, validateRedirect } from "@/lib/redirects";
 import {
   parseSeoForm,
   parseSeoPageForm,
@@ -142,6 +145,31 @@ function parseVariants(raw: string): {
 }
 
 /**
+ * Saat slug produk/kategori diganti, alamat lamanya dialihkan permanen ke
+ * yang baru supaya tautan lama, hasil Google, dan bookmark tidak 404.
+ * Kegagalan (mis. tabelnya belum ada) tidak menggagalkan penyimpanan.
+ */
+async function recordSlugChange(
+  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  kind: "produk" | "kategori",
+  oldSlug: string | undefined,
+  newSlug: string,
+) {
+  if (!oldSlug || oldSlug === newSlug) return;
+  const from = entityPath(kind, oldSlug);
+  const to = entityPath(kind, newSlug);
+
+  // Urutan ini disengaja: hapus aturan yang berasal dari alamat baru (bisa
+  // sisa pergantian sebelumnya), arahkan ulang rantai yang menuju alamat
+  // lama, baru catat aturan yang baru.
+  await supabase.from("seo_redirects").delete().eq("from_path", to);
+  await supabase.from("seo_redirects").update({ to_path: to }).eq("to_path", from);
+  await supabase
+    .from("seo_redirects")
+    .upsert({ from_path: from, to_path: to }, { onConflict: "from_path" });
+}
+
+/**
  * Judul dan deskripsi untuk Google dari form produk/kategori. Kolomnya baru
  * ada sesudah setup.sql v8 dijalankan, jadi nilainya hanya ikut disimpan bila
  * diisi, atau bila form menandai (seo_present) bahwa kolomnya sudah ada —
@@ -168,13 +196,31 @@ function seoSnippet(
   };
 }
 
+/**
+ * Teks alternatif foto produk. Seperti kolom SEO, kolomnya baru ada setelah
+ * setup.sql v9; ikut disimpan hanya bila diisi atau bila form menandai
+ * (alts_present) bahwa kolomnya sudah ada.
+ */
+function imageAltFields(
+  formData: FormData,
+  images: string[],
+): { error: string } | { fields: Record<string, unknown> } {
+  const parsed = parseImageAlts(String(formData.get("image_alts") ?? ""), images);
+  if (!parsed.ok) return { error: parsed.error };
+
+  const present = formData.get("alts_present") === "1";
+  if (!present && Object.keys(parsed.value).length === 0) return { fields: {} };
+  return { fields: { image_alts: parsed.value } };
+}
+
 const SEO_COLUMN_HINT =
   "Kolom SEO belum ada di database. Jalankan supabase/setup.sql versi terbaru di SQL Editor Supabase (aman dijalankan berulang), lalu simpan lagi.";
 
 /** Pesan khusus bila penyimpanan gagal karena kolom seo_* belum dibuat */
 function seoColumnMissing(error: { code?: string; message?: string } | null) {
   return (
-    error?.code === "PGRST204" && /seo_(title|description)/.test(error.message ?? "")
+    error?.code === "PGRST204" &&
+    /seo_(title|description)|image_alts/.test(error.message ?? "")
   );
 }
 
@@ -320,7 +366,10 @@ export async function createProduct(
   const { supabase } = await requireAdmin();
   const snippet = seoSnippet(formData);
   if ("error" in snippet) return { error: snippet.error };
-  const payload = { ...productPayload(formData), ...snippet.fields };
+  const base = productPayload(formData);
+  const alts = imageAltFields(formData, base.images);
+  if ("error" in alts) return { error: alts.error };
+  const payload = { ...base, ...snippet.fields, ...alts.fields };
   const parsedVariants = parseVariants(String(formData.get("variants") ?? ""));
   if (parsedVariants.error) return { error: parsedVariants.error };
 
@@ -372,12 +421,21 @@ export async function updateProduct(
 
   const snippet = seoSnippet(formData);
   if ("error" in snippet) return { error: snippet.error };
-  const payload = { ...productPayload(formData), ...snippet.fields };
+  const base = productPayload(formData);
+  const alts = imageAltFields(formData, base.images);
+  if ("error" in alts) return { error: alts.error };
+  const payload = { ...base, ...snippet.fields, ...alts.fields };
   const parsedVariants = parseVariants(String(formData.get("variants") ?? ""));
   if (parsedVariants.error) return { error: parsedVariants.error };
 
   const invalid = validateProduct(payload);
   if (invalid) return { error: invalid };
+
+  const { data: before } = await supabase
+    .from("products")
+    .select("slug")
+    .eq("id", id)
+    .maybeSingle();
 
   const { error } = await supabase
     .from("products")
@@ -394,6 +452,13 @@ export async function updateProduct(
             : describeError(error),
     };
   }
+
+  await recordSlugChange(
+    supabase,
+    "produk",
+    (before as { slug: string } | null)?.slug,
+    payload.slug,
+  );
 
   const attributeError = await syncAttributes(
     supabase,
@@ -459,6 +524,16 @@ export async function saveCategory(
   if (!payload.name) return { error: "Nama kategori wajib diisi." };
   if (!payload.slug) return { error: "Slug tidak valid." };
 
+  const before = id
+    ? (
+        await supabase
+          .from("categories")
+          .select("slug")
+          .eq("id", id)
+          .maybeSingle()
+      ).data
+    : null;
+
   const { error } = id
     ? await supabase.from("categories").update(payload).eq("id", id)
     : await supabase.from("categories").insert(payload);
@@ -473,6 +548,13 @@ export async function saveCategory(
             : describeError(error),
     };
   }
+
+  await recordSlugChange(
+    supabase,
+    "kategori",
+    (before as { slug: string } | null)?.slug,
+    payload.slug,
+  );
 
   revalidateShop();
   redirect("/admin/kategori");
@@ -652,4 +734,50 @@ export async function saveSeoPage(
 
   revalidateShop();
   return { success: "SEO halaman tersimpan." };
+}
+
+// ------------------------------------------------------------ redirect
+
+export async function saveRedirect(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const { supabase } = await requireAdmin();
+
+  const [identity, existing] = await Promise.all([
+    getSiteIdentity(),
+    supabase.from("seo_redirects").select("from_path, to_path"),
+  ]);
+
+  if (isSchemaMissing(existing.error)) {
+    return {
+      error:
+        "Tabel pengalihan belum ada di database. Jalankan supabase/setup.sql versi terbaru di SQL Editor Supabase (aman dijalankan berulang), lalu coba lagi.",
+    };
+  }
+
+  const check = validateRedirect(
+    String(formData.get("from_path") ?? ""),
+    String(formData.get("to_path") ?? ""),
+    identity.siteUrl,
+    (existing.data ?? []) as { from_path: string; to_path: string }[],
+  );
+  if (!check.ok) return { error: check.error };
+
+  const { error } = await supabase
+    .from("seo_redirects")
+    .upsert({ from_path: check.from, to_path: check.to }, { onConflict: "from_path" });
+  if (error) return { error: describeError(error) };
+
+  revalidatePath("/admin/seo/redirect");
+  return { success: `Tersimpan: ${check.from} → ${check.to}` };
+}
+
+export async function deleteRedirect(formData: FormData) {
+  const { supabase } = await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  await supabase.from("seo_redirects").delete().eq("id", id);
+  revalidatePath("/admin/seo/redirect");
 }

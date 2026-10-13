@@ -19,6 +19,7 @@
 --    2  admin + is_admin()      8  halaman depan (terbit + draft)
 --    3  kategori               8b  pengaturan SEO & bisnis lokal
 --                              8c  SEO per halaman statis
+--                              8d  pengalihan alamat (redirect 301)
 --    4  produk                  9  trigger updated_at
 --    5  atribut filter         10  Row Level Security (RLS)
 --    6  pengaturan toko        11  penyimpanan foto
@@ -142,6 +143,16 @@ alter table public.categories
 alter table public.categories
   add column if not exists seo_description text
     check (seo_description is null or char_length(seo_description) <= 200);
+
+-- Teks alternatif foto (v9): peta { "url foto": "teks" }. Foto tanpa teks
+-- memakai nama produk. Peta, bukan daftar paralel, supaya mengurutkan ulang
+-- foto tidak menggeser teksnya.
+alter table public.products
+  add column if not exists image_alts jsonb not null default '{}'::jsonb
+    check (
+      jsonb_typeof(image_alts) = 'object'
+      and octet_length(image_alts::text) <= 20000
+    );
 
 create index if not exists products_active_created_idx
   on public.products (is_active, created_at desc);
@@ -348,6 +359,31 @@ create table if not exists public.seo_pages (
 );
 
 -- -------------------------------------------------------------
+-- 8d. Pengalihan alamat (redirect permanen)
+--     Alamat lama → alamat baru. Dipakai saat slug produk/kategori
+--     diganti (dibuat otomatis oleh aplikasi) atau diisi manual dari
+--     Admin → SEO & Toko → Redirect. Hanya dibaca saat sebuah alamat
+--     tidak ditemukan. Isinya hanya pemetaan alamat, jadi boleh dibaca
+--     siapa saja.
+-- -------------------------------------------------------------
+create table if not exists public.seo_redirects (
+  id         uuid primary key default gen_random_uuid(),
+  from_path  text not null unique,
+  to_path    text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  -- Alamat situs sendiri: diawali satu "/", tanpa query/fragmen/spasi
+  constraint seo_redirects_from_check
+    check (from_path ~ '^/[^/?#[:space:]][^?#[:space:]]{0,198}$'),
+  constraint seo_redirects_to_check
+    check (
+      to_path ~ '^/([^/[:space:]#][^[:space:]#]*)?$'
+      and char_length(to_path) <= 300
+    ),
+  constraint seo_redirects_not_self check (from_path <> to_path)
+);
+
+-- -------------------------------------------------------------
 -- 9. Trigger updated_at
 -- -------------------------------------------------------------
 create or replace function public.touch_updated_at()
@@ -380,6 +416,10 @@ drop trigger if exists site_page_drafts_touch on public.site_page_drafts;
 create trigger site_page_drafts_touch before update on public.site_page_drafts
   for each row execute function public.touch_updated_at();
 
+drop trigger if exists seo_redirects_touch on public.seo_redirects;
+create trigger seo_redirects_touch before update on public.seo_redirects
+  for each row execute function public.touch_updated_at();
+
 drop trigger if exists seo_pages_touch on public.seo_pages;
 create trigger seo_pages_touch before update on public.seo_pages
   for each row execute function public.touch_updated_at();
@@ -407,6 +447,7 @@ alter table public.site_pages              enable row level security;
 alter table public.site_page_drafts        enable row level security;
 alter table public.seo_settings            enable row level security;
 alter table public.seo_pages               enable row level security;
+alter table public.seo_redirects           enable row level security;
 
 -- schema_versions — hanya admin yang perlu tahu isinya
 drop policy if exists "versions admin read" on public.schema_versions;
@@ -508,6 +549,15 @@ drop policy if exists "seo pages admin write" on public.seo_pages;
 create policy "seo pages admin write" on public.seo_pages
   for all using (public.is_admin()) with check (public.is_admin());
 
+-- seo_redirects — baca publik (dipakai halaman yang tidak ditemukan), tulis admin.
+drop policy if exists "seo redirects public read" on public.seo_redirects;
+create policy "seo redirects public read" on public.seo_redirects
+  for select using (true);
+
+drop policy if exists "seo redirects admin write" on public.seo_redirects;
+create policy "seo redirects admin write" on public.seo_redirects
+  for all using (public.is_admin()) with check (public.is_admin());
+
 -- site_page_drafts — hanya admin, baca maupun tulis
 drop policy if exists "drafts admin all" on public.site_page_drafts;
 create policy "drafts admin all" on public.site_page_drafts
@@ -549,7 +599,8 @@ values
   ('v5', 'Editor blok halaman depan: site_pages (terbit) + site_page_drafts (draft)'),
   ('v6', 'Semua digabung menjadi satu file setup.sql yang aman dijalankan berulang'),
   ('v7', 'Pengaturan SEO dan bisnis lokal (seo_settings): kota, alamat situs, data terstruktur, verifikasi, pelacakan'),
-  ('v8', 'SEO per produk, kategori, dan halaman statis (seo_title, seo_description, seo_pages)')
+  ('v8', 'SEO per produk, kategori, dan halaman statis (seo_title, seo_description, seo_pages)'),
+  ('v9', 'Pengalihan alamat (seo_redirects) dan teks alternatif foto produk (image_alts)')
 on conflict (version) do nothing;
 
 -- -------------------------------------------------------------
@@ -571,8 +622,8 @@ select
       and table_name in (
         'schema_versions', 'admins', 'categories', 'products',
         'product_attributes', 'product_attribute_links', 'store_settings',
-        'product_variants', 'site_pages', 'site_page_drafts', 'seo_settings', 'seo_pages'
-      ))                                          as tabel_terpasang_dari_12,
+        'product_variants', 'site_pages', 'site_page_drafts', 'seo_settings', 'seo_pages', 'seo_redirects'
+      ))                                          as tabel_terpasang_dari_13,
   (select count(*) from public.admins)            as jumlah_admin,
   (select string_agg(version, ', ' order by version)
      from public.schema_versions)                 as versi_tercatat,

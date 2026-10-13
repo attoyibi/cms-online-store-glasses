@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 const tabs = [
   { href: "/admin/seo", label: "Situs & bisnis lokal", exact: true },
   { href: "/admin/seo/halaman", label: "Halaman" },
+  { href: "/admin/seo/redirect", label: "Redirect" },
+  { href: "/admin/seo/feed", label: "Feed Google" },
   { href: "/admin/seo/periksa", label: "Pemeriksa SEO" },
 ];
 

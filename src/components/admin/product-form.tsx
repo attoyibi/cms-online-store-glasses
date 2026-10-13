@@ -247,7 +247,14 @@ export function ProductForm({
 
       <fieldset className="space-y-4 border-t pt-6">
         <legend className="text-sm font-semibold">Gambar</legend>
-        <ImageUploader name="images" defaultValue={product?.images ?? []} />
+        <ImageUploader
+          name="images"
+          defaultValue={product?.images ?? []}
+          altName="image_alts"
+          defaultAlts={product?.image_alts ?? {}}
+          altsColumnExists={Boolean(product && "image_alts" in product)}
+          altFallback={product?.name}
+        />
       </fieldset>
 
       <fieldset className="space-y-4 border-t pt-6">

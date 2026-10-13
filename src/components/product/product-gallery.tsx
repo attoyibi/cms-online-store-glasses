@@ -7,10 +7,11 @@ import { cn } from "@/lib/utils";
 
 export function ProductGallery({
   images,
-  alt,
+  alts,
 }: {
   images: string[];
-  alt: string;
+  /** Teks alternatif tiap foto, searah dengan `images` */
+  alts: string[];
 }) {
   const [active, setActive] = useState(0);
   const current = images[active];
@@ -20,7 +21,7 @@ export function ProductGallery({
       <div className="relative aspect-4/5 overflow-hidden rounded-2xl border bg-muted sm:aspect-square">
         <ProductImage
           src={current}
-          alt={alt}
+          alt={alts[active] ?? ""}
           sizes="(min-width: 1024px) 45vw, 100vw"
           priority
         />
