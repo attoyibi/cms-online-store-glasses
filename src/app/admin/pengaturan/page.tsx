@@ -12,8 +12,8 @@ export default async function AdminSettingsPage() {
     .limit(1)
     .maybeSingle();
 
-  // Baris pengaturan dibuat oleh v1/01_schema.sql. Kalau belum ada —
-  // misalnya tabelnya dibuat manual — form ini yang akan membuatnya.
+  // setup.sql tidak mengisi data toko siapa pun. Baris pengaturan pertama
+  // dibuat oleh form ini; selama belum ada, nilai bawaan dari site-config.
   const settings: StoreSettings = (data as StoreSettings | null) ?? {
     id: "",
     store_name: siteConfig.name,

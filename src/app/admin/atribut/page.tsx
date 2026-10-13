@@ -52,7 +52,7 @@ export default async function AdminAttributesPage() {
           className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive"
         >
           Gagal memuat: {error.message}. Kemungkinan{" "}
-          <code className="font-mono">supabase/v3/01_schema.sql</code> belum
+          <code className="font-mono">supabase/setup.sql</code> belum
           dijalankan.
         </p>
       )}

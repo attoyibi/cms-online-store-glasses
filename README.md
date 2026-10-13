@@ -38,7 +38,7 @@ lewat halaman `/admin` yang dilindungi login.
 - CRUD kategori dengan pengaturan urutan tampil
 - Kelola opsi filter (bentuk, material, warna) tanpa perlu menyentuh SQL
 - Pengaturan toko: nama, nomor WhatsApp, alamat, jam buka, dan bar pengumuman
-- **Halaman Depan**: halaman depan tersusun dari blok (hero, keunggulan, kategori, deretan produk, tentang, lensa, cara pesan, testimoni, FAQ, banner). Editornya menampilkan **pratinjau langsung** halaman asli di sebelah form (mode Desktop/Tablet/HP): klik bagian mana pun untuk mengeditnya dan hasilnya langsung terlihat. Admin bisa mengedit isi tiap blok, mengubah urutan, menyembunyikan, menduplikasi, dan menambah blok baru, dengan **undo/redo** (Ctrl+Z), draft, lalu terbitkan. Butuh `supabase/v5`
+- **Halaman Depan**: halaman depan tersusun dari blok (hero, keunggulan, kategori, deretan produk, tentang, lensa, cara pesan, testimoni, FAQ, banner). Editornya menampilkan **pratinjau langsung** halaman asli di sebelah form (mode Desktop/Tablet/HP): klik bagian mana pun untuk mengeditnya dan hasilnya langsung terlihat. Admin bisa mengedit isi tiap blok, mengubah urutan, menyembunyikan, menduplikasi, dan menambah blok baru, dengan **undo/redo** (Ctrl+Z), draft, lalu terbitkan. Butuh `supabase/setup.sql`
 
 ## Menjalankan secara lokal
 
@@ -56,12 +56,10 @@ Tanpa kredensial Supabase, situs tetap jalan memakai data contoh di
 ## Menghubungkan Supabase
 
 1. Buat proyek di [supabase.com](https://supabase.com/dashboard).
-2. SQL Editor → jalankan `supabase/v3/01_schema.sql`, lalu
-   `supabase/v3/02_seed.sql` (opsional — isinya data contoh). Dua file itu
-   sudah mencakup semuanya; detail dan riwayat versinya ada di
-   [`supabase/README.md`](supabase/README.md). Untuk **varian produk** dan
-   kategori Lap Kacamata, lanjutkan dengan `supabase/v4/01_variants.sql`
-   (dan `02_seed_lap_lensa.sql` bila ingin data contoh).
+2. SQL Editor → tempel isi **`supabase/setup.sql`** lalu Run. Cukup satu file,
+   dan **aman dijalankan berulang** (toko baru maupun pembaruan toko lama; data
+   tidak disentuh). Data contoh opsional: `supabase/seed-demo.sql`. Detail dan
+   cara memperbarui ada di [`supabase/README.md`](supabase/README.md).
 3. Salin `.env.example` menjadi `.env.local`, isi `NEXT_PUBLIC_SUPABASE_URL` dan
    `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (Project Settings → API).
 4. Authentication → Users → **Add user**, buat akun admin.
@@ -175,9 +173,10 @@ src/
 └─ middleware.ts         Penyegar sesi + penjaga rute /admin
 
 supabase/
-├─ README.md             Panduan setup & aturan versi
-├─ v1/ + v2/              Riwayat — jangan diubah lagi
-└─ v3/                   Setup baru mulai dari sini (01_schema + 02_seed)
+├─ setup.sql             SATU file untuk semua: pasang baru & pembaruan (idempoten)
+├─ seed-demo.sql         Data contoh (opsional, tidak menimpa edit Anda)
+├─ reset.sql             Hapus semuanya — hanya untuk uji coba (dikomentari)
+└─ README.md             Panduan lengkap
 ```
 
 Penyaringan dan penghitungan jumlah per opsi dikerjakan di `lib/filters.ts`,

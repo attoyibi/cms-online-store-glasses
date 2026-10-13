@@ -388,7 +388,7 @@ export function PageEditor({
           <span>
             Tabel halaman belum dibuat di Supabase, jadi perubahan belum bisa
             disimpan. Jalankan{" "}
-            <code className="font-mono">supabase/v5/01_site_pages.sql</code>{" "}
+            <code className="font-mono">supabase/setup.sql</code>{" "}
             di SQL Editor, lalu muat ulang halaman ini.
           </span>
         </p>

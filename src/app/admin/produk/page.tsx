@@ -47,7 +47,7 @@ export default async function AdminProductsPage() {
       {products.length === 0 ? (
         <p className="rounded-xl border border-dashed p-10 text-center text-sm text-muted-foreground">
           Belum ada produk. Tambahkan yang pertama, atau jalankan{" "}
-          <code className="font-mono">supabase/v3/02_seed.sql</code> untuk
+          <code className="font-mono">supabase/seed-demo.sql</code> untuk
           mengisi data contoh.
         </p>
       ) : (

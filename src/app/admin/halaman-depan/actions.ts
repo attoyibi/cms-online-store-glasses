@@ -18,7 +18,7 @@ export type EditorResult = {
 };
 
 const SCHEMA_HINT =
-  "Tabel halaman belum ada. Jalankan supabase/v5/01_site_pages.sql di SQL Editor Supabase dulu.";
+  "Tabel halaman belum ada. Jalankan supabase/setup.sql di SQL Editor Supabase dulu.";
 
 const MAX_JSON = 400_000;
 
