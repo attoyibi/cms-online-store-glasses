@@ -22,6 +22,15 @@ export default async function HomePageEditorPage() {
           draft dulu, dan baru terlihat pengunjung setelah Anda menekan
           Terbitkan.
         </p>
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          Tip: tulis <code className="font-mono">{"{kota}"}</code> atau{" "}
+          <code className="font-mono">{"{toko}"}</code> di teks mana pun, dan
+          otomatis diganti dengan kota dan nama toko dari{" "}
+          <a href="/admin/seo" className="font-medium underline">
+            SEO &amp; Toko
+          </a>
+          .
+        </p>
       </div>
 
       <PageEditor

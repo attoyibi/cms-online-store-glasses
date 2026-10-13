@@ -98,3 +98,33 @@ export type CartItem = {
   variantId?: string | null;
   variantLabel?: string | null;
 };
+
+/** Baris pengaturan SEO & bisnis lokal (tabel seo_settings). Semua kolom boleh kosong. */
+export type SeoSettings = {
+  id: string;
+  site_url: string | null;
+  city: string | null;
+  region: string | null;
+  tagline: string | null;
+  default_description: string | null;
+  default_og_image: string | null;
+  logo_url: string | null;
+  phone: string | null;
+  street_address: string | null;
+  postal_code: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  /** Kode hari: Mo, Tu, We, Th, Fr, Sa, Su */
+  open_days: string[];
+  /** "HH:MM" */
+  opens: string | null;
+  closes: string | null;
+  /** "$", "$$", atau "$$$" */
+  price_range: string | null;
+  same_as: string[];
+  google_verification: string | null;
+  bing_verification: string | null;
+  ga4_id: string | null;
+  meta_pixel_id: string | null;
+  noindex_site: boolean;
+};

@@ -7,6 +7,7 @@ import {
   LayoutTemplate,
   LogOut,
   Package,
+  Search,
   Settings,
   SlidersHorizontal,
   Tags,
@@ -23,6 +24,7 @@ const links = [
   { href: "/admin/kategori", label: "Kategori", icon: Tags },
   { href: "/admin/atribut", label: "Atribut Filter", icon: SlidersHorizontal },
   { href: "/admin/pengaturan", label: "Pengaturan", icon: Settings },
+  { href: "/admin/seo", label: "SEO & Toko", icon: Search },
 ];
 
 export function AdminNav({ email }: { email: string }) {

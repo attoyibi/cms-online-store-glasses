@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 
 import { BlockRenderer } from "@/components/blocks/block-renderer";
-import { getPublishedBlocks } from "@/lib/data/queries";
+import { getPublishedBlocks, getSiteIdentity } from "@/lib/data/queries";
+import { jsonLdString, localBusinessJsonLd, websiteJsonLd } from "@/lib/seo";
 
 // Judul dan deskripsi beranda berasal dari layout; di sini hanya penanda alamat resmi
 export const metadata: Metadata = { alternates: { canonical: "/" } };
@@ -12,6 +13,27 @@ export const metadata: Metadata = { alternates: { canonical: "/" } };
  * susunan semula (lihat `defaultHomeBlocks`).
  */
 export default async function HomePage() {
-  const blocks = await getPublishedBlocks();
-  return <BlockRenderer blocks={blocks} />;
+  const [blocks, identity] = await Promise.all([
+    getPublishedBlocks(),
+    getSiteIdentity(),
+  ]);
+  const business = localBusinessJsonLd(identity);
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLdString(websiteJsonLd(identity)),
+        }}
+      />
+      {business && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdString(business) }}
+        />
+      )}
+      <BlockRenderer blocks={blocks} />
+    </>
+  );
 }

@@ -17,10 +17,11 @@
 --  Isinya (menggabungkan v1–v5 yang dulu terpisah):
 --    1  pencatat versi          7  varian produk
 --    2  admin + is_admin()      8  halaman depan (terbit + draft)
---    3  kategori                9  trigger updated_at
---    4  produk                 10  Row Level Security (RLS)
---    5  atribut filter         11  penyimpanan foto
---    6  pengaturan toko        12  pencatatan versi + ringkasan
+--    3  kategori               8b  pengaturan SEO & bisnis lokal
+--    4  produk                  9  trigger updated_at
+--    5  atribut filter         10  Row Level Security (RLS)
+--    6  pengaturan toko        11  penyimpanan foto
+--                              12  pencatatan versi + ringkasan
 --
 --  TIDAK ada data toko siapa pun di file ini. Pengaturan toko
 --  (nama, WhatsApp, alamat) diisi dari Admin → Pengaturan.
@@ -254,6 +255,67 @@ create table if not exists public.site_page_drafts (
 );
 
 -- -------------------------------------------------------------
+-- 8b. Pengaturan SEO dan bisnis lokal (baris tunggal)
+--     Diisi dari Admin → SEO & Toko. Semua kolom boleh kosong; selama
+--     kosong, aplikasi memakai nilai bawaannya. Isinya memang tampil
+--     publik di halaman (judul, data terstruktur, kode pelacakan),
+--     sehingga boleh dibaca siapa saja.
+--       · Identitas: alamat situs, kota, provinsi, tagline, deskripsi,
+--         gambar sosial, logo. Kota dan nama toko dipakai mengganti
+--         penanda {kota} dan {toko} di seluruh teks halaman.
+--       · Bisnis lokal: telepon, alamat, koordinat, jam buka — untuk
+--         data terstruktur Google (LocalBusiness).
+--       · Verifikasi dan pelacakan: Search Console, Bing, GA4, Meta Pixel.
+--       · noindex_site: mematikan pengindeksan seluruh situs (untuk
+--         situs yang belum siap tayang).
+-- -------------------------------------------------------------
+create table if not exists public.seo_settings (
+  id                  uuid primary key default gen_random_uuid(),
+  site_url            text,
+  city                text,
+  region              text,
+  tagline             text,
+  default_description text,
+  default_og_image    text,
+  logo_url            text,
+  phone               text,
+  street_address      text,
+  postal_code         text,
+  latitude            double precision,
+  longitude           double precision,
+  open_days           text[] not null default '{}',
+  opens               text,
+  closes              text,
+  price_range         text,
+  same_as             text[] not null default '{}',
+  google_verification text,
+  bing_verification   text,
+  ga4_id              text,
+  meta_pixel_id       text,
+  noindex_site        boolean not null default false,
+  updated_at          timestamptz not null default now(),
+
+  -- Hanya asal (origin) situs, tanpa path: https://toko.com
+  constraint seo_settings_site_url_check
+    check (site_url is null or site_url ~ '^https?://[^\s/]+$'),
+  constraint seo_settings_latitude_check
+    check (latitude is null or latitude between -90 and 90),
+  constraint seo_settings_longitude_check
+    check (longitude is null or longitude between -180 and 180),
+  -- Koordinat harus berpasangan
+  constraint seo_settings_geo_pair_check
+    check ((latitude is null) = (longitude is null)),
+  constraint seo_settings_price_range_check
+    check (price_range is null or price_range in ('$', '$$', '$$$')),
+  constraint seo_settings_open_days_check
+    check (open_days <@ array['Mo','Tu','We','Th','Fr','Sa','Su']::text[])
+);
+
+-- Tabel ini tidak pernah punya lebih dari satu baris
+create unique index if not exists seo_settings_singleton_idx
+  on public.seo_settings ((true));
+
+-- -------------------------------------------------------------
 -- 9. Trigger updated_at
 -- -------------------------------------------------------------
 create or replace function public.touch_updated_at()
@@ -286,6 +348,10 @@ drop trigger if exists site_page_drafts_touch on public.site_page_drafts;
 create trigger site_page_drafts_touch before update on public.site_page_drafts
   for each row execute function public.touch_updated_at();
 
+drop trigger if exists seo_settings_touch on public.seo_settings;
+create trigger seo_settings_touch before update on public.seo_settings
+  for each row execute function public.touch_updated_at();
+
 -- -------------------------------------------------------------
 -- 10. Row Level Security
 --     Aturan dasar:
@@ -303,6 +369,7 @@ alter table public.store_settings          enable row level security;
 alter table public.product_variants        enable row level security;
 alter table public.site_pages              enable row level security;
 alter table public.site_page_drafts        enable row level security;
+alter table public.seo_settings            enable row level security;
 
 -- schema_versions — hanya admin yang perlu tahu isinya
 drop policy if exists "versions admin read" on public.schema_versions;
@@ -385,6 +452,16 @@ drop policy if exists "pages admin write" on public.site_pages;
 create policy "pages admin write" on public.site_pages
   for all using (public.is_admin()) with check (public.is_admin());
 
+-- seo_settings — isinya tampil publik di halaman, jadi boleh dibaca siapa
+-- saja; hanya admin yang menulis.
+drop policy if exists "seo public read" on public.seo_settings;
+create policy "seo public read" on public.seo_settings
+  for select using (true);
+
+drop policy if exists "seo admin write" on public.seo_settings;
+create policy "seo admin write" on public.seo_settings
+  for all using (public.is_admin()) with check (public.is_admin());
+
 -- site_page_drafts — hanya admin, baca maupun tulis
 drop policy if exists "drafts admin all" on public.site_page_drafts;
 create policy "drafts admin all" on public.site_page_drafts
@@ -424,7 +501,8 @@ values
   ('v3', 'Bundel konsolidasi v1+v2'),
   ('v4', 'Varian produk (harga & stok per pilihan), mis. ukuran lensa'),
   ('v5', 'Editor blok halaman depan: site_pages (terbit) + site_page_drafts (draft)'),
-  ('v6', 'Semua digabung menjadi satu file setup.sql yang aman dijalankan berulang')
+  ('v6', 'Semua digabung menjadi satu file setup.sql yang aman dijalankan berulang'),
+  ('v7', 'Pengaturan SEO dan bisnis lokal (seo_settings): kota, alamat situs, data terstruktur, verifikasi, pelacakan')
 on conflict (version) do nothing;
 
 -- -------------------------------------------------------------
@@ -446,8 +524,8 @@ select
       and table_name in (
         'schema_versions', 'admins', 'categories', 'products',
         'product_attributes', 'product_attribute_links', 'store_settings',
-        'product_variants', 'site_pages', 'site_page_drafts'
-      ))                                          as tabel_terpasang_dari_10,
+        'product_variants', 'site_pages', 'site_page_drafts', 'seo_settings'
+      ))                                          as tabel_terpasang_dari_11,
   (select count(*) from public.admins)            as jumlah_admin,
   (select string_agg(version, ', ' order by version)
      from public.schema_versions)                 as versi_tercatat,

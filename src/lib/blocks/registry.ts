@@ -68,7 +68,7 @@ export const BLOCK_DEFS: { [K in BlockType]: BlockDefinition<K> } = {
       whatsappLabel: "Konsultasi WhatsApp",
       whatsappMessage: "Halo {store}, saya mau konsultasi soal kacamata.",
       stats: [
-        { value: "2", label: "Toko di Yogyakarta" },
+        { value: "2", label: "Toko di {kota}" },
         { value: "500+", label: "Model frame & lensa" },
         { value: "34", label: "Provinsi terjangkau" },
       ],
@@ -105,7 +105,7 @@ export const BLOCK_DEFS: { [K in BlockType]: BlockDefinition<K> } = {
       items: [
         {
           icon: "store",
-          title: "Toko fisik di Jogja",
+          title: "Toko fisik di {kota}",
           body: "Bisa datang langsung untuk coba frame dan cek mata.",
         },
         {
@@ -221,8 +221,8 @@ export const BLOCK_DEFS: { [K in BlockType]: BlockDefinition<K> } = {
     ],
     defaults: {
       eyebrow: "Tentang Kami",
-      title: "Optik kecil dari Jogja yang tidak suka menjual barang asal-asalan",
-      body: "Kami mulai dari satu gerai kecil di Kaliurang. Sampai sekarang prinsipnya tidak berubah: setiap frame dicoba dulu sebelum masuk katalog, dan setiap pertanyaan dijawab apa adanya — termasuk kalau jawabannya adalah “model ini kurang cocok untuk wajah Anda”.",
+      title: "Optik kecil dari {kota} yang tidak suka menjual barang asal-asalan",
+      body: "Kami mulai dari satu gerai kecil di {kota}. Sampai sekarang prinsipnya tidak berubah: setiap frame dicoba dulu sebelum masuk katalog, dan setiap pertanyaan dijawab apa adanya — termasuk kalau jawabannya adalah “model ini kurang cocok untuk wajah Anda”.",
       points: [
         "Frame diseleksi langsung, bukan dropship",
         "Resep lensa bisa dikirim dari hasil periksa optik mana pun",
@@ -423,7 +423,7 @@ export const BLOCK_DEFS: { [K in BlockType]: BlockDefinition<K> } = {
         },
         {
           q: "Saya tidak punya hasil periksa mata, bagaimana?",
-          a: "Bisa datang ke toko kami di Jogja untuk periksa gratis. Kalau di luar kota, Anda bisa periksa di optik terdekat lalu kirimkan fotonya ke WhatsApp kami — kami hanya butuh angka SPH, CYL, AXIS, dan PD.",
+          a: "Bisa datang ke toko kami di {kota} untuk periksa gratis. Kalau di luar kota, Anda bisa periksa di optik terdekat lalu kirimkan fotonya ke WhatsApp kami — kami hanya butuh angka SPH, CYL, AXIS, dan PD.",
         },
         {
           q: "Berapa lama pesanan sampai?",

@@ -4,15 +4,22 @@ import { AboutStrip } from "@/components/sections/about-strip";
 import { CtaBanner } from "@/components/sections/cta-banner";
 import { Testimonials } from "@/components/sections/testimonials";
 import { TrustBar } from "@/components/sections/trust-bar";
+import { sectionProps } from "@/lib/blocks/resolve";
+import { getSiteIdentity } from "@/lib/data/queries";
+import { textVars } from "@/lib/site-identity";
 
-export const metadata: Metadata = {
-  title: "Tentang Kami",
-  alternates: { canonical: "/tentang" },
-  description:
-    "Optik kecil dari Yogyakarta yang menyeleksi sendiri setiap frame sebelum masuk katalog.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { city } = await getSiteIdentity();
+  return {
+    title: "Tentang Kami",
+    alternates: { canonical: "/tentang" },
+    description: `Optik kecil dari ${city} yang menyeleksi sendiri setiap frame sebelum masuk katalog.`,
+  };
+}
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const vars = textVars(await getSiteIdentity());
+
   return (
     <>
       <div className="container-page pb-4 pt-10 sm:pt-14">
@@ -25,8 +32,8 @@ export default function AboutPage() {
         </header>
       </div>
 
-      <AboutStrip />
-      <TrustBar />
+      <AboutStrip {...sectionProps("about", vars)} />
+      <TrustBar {...sectionProps("trust-bar", vars)} />
       <Testimonials />
       <CtaBanner />
     </>

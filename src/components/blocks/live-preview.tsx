@@ -11,6 +11,7 @@ import {
 import { BLOCK_DEFS } from "@/lib/blocks/registry";
 import { pickProducts } from "@/lib/blocks/select-products";
 import type { Block } from "@/lib/blocks/types";
+import { resolveVarsDeep, type TextVars } from "@/lib/site-identity";
 import type { Category, Product } from "@/lib/types";
 
 function post(message: PreviewMessage) {
@@ -41,17 +42,23 @@ export function LivePreview({
   initialBlocks,
   products,
   categories,
+  vars,
 }: {
   initialBlocks: Block[];
   products: Product[];
   categories: Category[];
+  /** Nilai {kota}/{toko}/{provinsi}, supaya pratinjau sama dengan situs asli */
+  vars: TextVars;
 }) {
   const [blocks, setBlocks] = useState<Block[]>(initialBlocks);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // Dibersihkan dengan aturan yang sama seperti halaman sungguhan, supaya
   // pratinjau menampilkan persis apa yang akan dilihat pengunjung.
-  const normalized = useMemo(() => normalizeBlocks(blocks), [blocks]);
+  const normalized = useMemo(
+    () => resolveVarsDeep(normalizeBlocks(blocks), vars),
+    [blocks, vars],
+  );
   const priorityId = priorityShowcaseId(normalized);
 
   useEffect(() => {

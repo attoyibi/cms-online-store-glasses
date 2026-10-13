@@ -3,6 +3,9 @@ import type { Metadata } from "next";
 import { CtaBanner } from "@/components/sections/cta-banner";
 import { FaqSection } from "@/components/sections/faq-section";
 import { HowToOrder } from "@/components/sections/how-to-order";
+import { sectionProps } from "@/lib/blocks/resolve";
+import { getSiteIdentity } from "@/lib/data/queries";
+import { textVars } from "@/lib/site-identity";
 
 export const metadata: Metadata = {
   title: "Cara Pesan",
@@ -11,7 +14,9 @@ export const metadata: Metadata = {
     "Empat langkah memesan kacamata: pilih produk, kirim ke WhatsApp, konfirmasi pembayaran, lalu barang dikirim.",
 };
 
-export default function HowToOrderPage() {
+export default async function HowToOrderPage() {
+  const vars = textVars(await getSiteIdentity());
+
   return (
     <>
       <div className="container-page pt-10 sm:pt-14">
@@ -26,7 +31,7 @@ export default function HowToOrderPage() {
       </div>
 
       <HowToOrder />
-      <FaqSection />
+      <FaqSection {...sectionProps("faq", vars)} />
       <CtaBanner />
     </>
   );
