@@ -193,6 +193,72 @@ dipindah ke agregasi di database.
 > dipertahankan agar tetap berjalan di edge runtime. Ganti namanya setelah adapter
 > Cloudflare mendukung Node middleware.
 
+## Keamanan
+
+Halaman admin ada di `/admin`. Alamat itu sengaja tidak disembunyikan —
+mengganti alamat bukan pengamanan. Yang melindungi adalah tiga lapis yang
+**sudah terpasang**, tanpa layanan tambahan:
+
+1. **Login** — `middleware.ts` memvalidasi sesi ke Supabase di setiap request
+   ke `/admin`; yang belum login diarahkan ke `/admin/login`.
+2. **Daftar admin** — login saja tidak cukup. Hanya akun yang ada di tabel
+   `admins` yang lolos `is_admin()`.
+3. **Row Level Security** — ini penjaga yang sebenarnya, di database. Semua
+   tabel dan bucket foto hanya bisa **ditulis** oleh admin; publik hanya bisa
+   membaca data aktif. Sekalipun halaman admin berhasil ditembus, database
+   tetap menolak.
+
+Aplikasi hanya memakai *publishable key* (memang aman terlihat publik). Jangan
+pernah menaruh `service_role` key di `.env`, di variabel `NEXT_PUBLIC_*`, atau
+di repo ini — kunci itu melewati RLS.
+
+### Checklist sebelum toko dibuka (5 menit, semua di dashboard Supabase)
+
+- [ ] **Matikan pendaftaran publik** — Authentication → Sign In / Providers →
+      matikan **Allow new users to sign up**. Ini paling penting: kunci publik
+      bisa dipakai siapa saja untuk mendaftar, dan tanpa ini orang asing bisa
+      punya akun di proyek Anda. Admin tetap dibuat lewat **Add user**
+      (langkah 4 di atas), jadi alur pasang tidak berubah.
+- [ ] **Password admin panjang dan unik** — minimal 12 karakter, jangan dipakai
+      di layanan lain. Naikkan batas minimumnya di pengaturan Authentication
+      (cari *Minimum password length*).
+- [ ] **Aktifkan 2FA di akun pemilik** — Supabase, Cloudflare, dan GitHub. Akun
+      ini lebih berkuasa daripada `/admin` (bisa mengubah database, kode, dan
+      domain), jadi pengamanannya paling berdampak. Gratis dan tanpa kode.
+- [ ] **Isi `NEXT_PUBLIC_SITE_URL` dengan domain asli**, dan di Authentication →
+      URL Configuration isi *Site URL* yang sama.
+- [ ] **Cek tabel `admins`** — hanya berisi orang yang memang boleh mengelola toko:
+
+  ```sql
+  select email, created_at from public.admins;
+  ```
+
+### Operasional
+
+- **Menambah admin:** buat user di Authentication → Users, lalu jalankan
+  `insert into public.admins …` seperti langkah 5. **Mencabut akses:** hapus
+  barisnya dari `admins` (aksesnya hilang saat itu juga), lalu hapus user-nya.
+- **Lupa password:** Authentication → Users → pilih user → *Send password
+  recovery* atau atur ulang langsung. Belum ada fitur lupa password di aplikasi
+  (sengaja, supaya pemasangan tetap sederhana).
+- **Login dibatasi otomatis** oleh Supabase Auth (rate limit per IP), jadi
+  tebak-menebak password tidak bisa berjalan cepat.
+- Header dasar (`X-Frame-Options`, `nosniff`, `Referrer-Policy`) sudah dipasang
+  di `next.config.ts`. Tidak ada Content-Security-Policy karena Next.js memakai
+  skrip inline.
+- Dependabot memantau dependensi tiap minggu (`.github/dependabot.yml`).
+
+### Belum ada di versi 1 (sengaja)
+
+Ditunda supaya pemasangan tetap mudah; masuk akal ditambah di versi berikutnya
+bila toko sudah ramai:
+
+- Verifikasi dua langkah (MFA/TOTP) untuk admin — didukung Supabase, butuh
+  halaman pendaftaran dan pengecekan di aplikasi.
+- Batas ukuran/tipe file di sisi server untuk bucket `product-images`
+  (sekarang divalidasi di browser; yang bisa mengunggah tetap hanya admin).
+- Log aktivitas admin dan fitur lupa password di dalam aplikasi.
+
 ## Catatan desain
 
 Gambar di `public/products` adalah ilustrasi SVG buatan sendiri
