@@ -95,6 +95,22 @@ const supabaseHost = (() => {
 })();
 
 const nextConfig: NextConfig = {
+  // Header dasar tanpa konfigurasi tambahan. SAMEORIGIN (bukan DENY) karena
+  // editor Halaman Depan menampilkan situs sendiri di dalam iframe.
+  // Sengaja tanpa Content-Security-Policy: Next.js memakai skrip inline.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+        ],
+      },
+    ];
+  },
   images: {
     remotePatterns: supabaseHost
       ? [
