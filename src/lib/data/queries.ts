@@ -429,8 +429,8 @@ export async function isSchemaReady(): Promise<boolean> {
  * dipakai adalah susunan bawaan — yang sama persis dengan tampilan semula,
  * jadi situs tidak pernah kosong gara-gara data halaman bermasalah.
  */
-export async function getPublishedBlocks(): Promise<Block[]> {
-  const layout = getLayout((await getStoreSettings()).layout);
+export async function getPublishedBlocks(layoutId?: string): Promise<Block[]> {
+  const layout = getLayout(layoutId ?? (await getStoreSettings()).layout);
   const defaults = () => defaultBlocksFor(layout.id);
 
   const supabase = await createClient();

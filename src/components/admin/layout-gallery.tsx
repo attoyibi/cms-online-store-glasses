@@ -81,6 +81,11 @@ export function LayoutGallery({
                 )}
                 {isActive ? "Sedang dipakai" : "Aktifkan"}
               </Button>
+              <Button asChild type="button" size="sm" variant="outline">
+                <Link href={`/pratinjau-tema/${layout.id}`} target="_blank">
+                  Pratinjau
+                </Link>
+              </Button>
               {isActive && (
                 <Link
                   href="/admin/halaman-depan"
