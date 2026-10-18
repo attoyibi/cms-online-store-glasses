@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 
 import { normalizeBlocks } from "@/lib/blocks/normalize";
-import { defaultHomeBlocks } from "@/lib/blocks/registry";
+import { getLayout } from "@/lib/layouts";
+import { defaultBlocksFor } from "@/themes/defaults";
 import type { Block } from "@/lib/blocks/types";
 import { requireAdmin } from "@/lib/supabase/admin";
 import { isSchemaMissing } from "@/lib/supabase/env";
@@ -50,24 +51,38 @@ function failure(error: { code?: string; message?: string }, prefix: string) {
   } satisfies EditorResult;
 }
 
+/*
+ * Id tata letak dikirim dari editor (di-bind di halaman) supaya simpan selalu
+ * mendarat di halaman yang sedang dibuka, walau tata letak diganti di tab
+ * lain. Tetap disaring lewat `getLayout`, jadi slug apa pun dari luar ditolak.
+ */
+
 /** Simpan sebagai draft — belum terlihat pengunjung */
-export async function saveHomeDraft(json: string): Promise<EditorResult> {
+export async function saveHomeDraft(
+  layoutId: string,
+  json: string,
+): Promise<EditorResult> {
   const { supabase } = await requireAdmin();
+  const { pageSlug } = getLayout(layoutId);
 
   const parsed = parseBlocks(json);
   if ("error" in parsed) return { ok: false, error: parsed.error };
 
   const { error } = await supabase
     .from("site_page_drafts")
-    .upsert({ slug: "home", blocks: parsed.blocks }, { onConflict: "slug" });
+    .upsert({ slug: pageSlug, blocks: parsed.blocks }, { onConflict: "slug" });
 
   if (error) return failure(error, "Draft gagal disimpan");
   return { ok: true, message: "Draft tersimpan. Belum terlihat pengunjung." };
 }
 
 /** Terbitkan: tampil di halaman depan. Draft ikut disamakan. */
-export async function publishHome(json: string): Promise<EditorResult> {
+export async function publishHome(
+  layoutId: string,
+  json: string,
+): Promise<EditorResult> {
   const { supabase } = await requireAdmin();
+  const { pageSlug } = getLayout(layoutId);
 
   const parsed = parseBlocks(json);
   if ("error" in parsed) return { ok: false, error: parsed.error };
@@ -76,7 +91,7 @@ export async function publishHome(json: string): Promise<EditorResult> {
     .from("site_pages")
     .upsert(
       {
-        slug: "home",
+        slug: pageSlug,
         blocks: parsed.blocks,
         published_at: new Date().toISOString(),
       },
@@ -87,7 +102,7 @@ export async function publishHome(json: string): Promise<EditorResult> {
   // Draft disamakan agar editor tidak menampilkan "belum diterbitkan"
   const { error: draftError } = await supabase
     .from("site_page_drafts")
-    .upsert({ slug: "home", blocks: parsed.blocks }, { onConflict: "slug" });
+    .upsert({ slug: pageSlug, blocks: parsed.blocks }, { onConflict: "slug" });
   if (draftError) return failure(draftError, "Terbit, tapi draft gagal disamakan");
 
   revalidatePath("/", "layout");
@@ -95,24 +110,25 @@ export async function publishHome(json: string): Promise<EditorResult> {
 }
 
 /** Buang draft: kembali ke versi yang terbit (atau bawaan bila belum pernah terbit) */
-export async function discardHomeDraft(): Promise<EditorResult> {
+export async function discardHomeDraft(layoutId: string): Promise<EditorResult> {
   const { supabase } = await requireAdmin();
+  const layout = getLayout(layoutId);
 
   const { error } = await supabase
     .from("site_page_drafts")
     .delete()
-    .eq("slug", "home");
+    .eq("slug", layout.pageSlug);
   if (error) return failure(error, "Draft gagal dibuang");
 
   const { data } = await supabase
     .from("site_pages")
     .select("blocks")
-    .eq("slug", "home")
+    .eq("slug", layout.pageSlug)
     .maybeSingle();
 
   return {
     ok: true,
     message: "Perubahan dibuang. Kembali ke versi yang terbit.",
-    blocks: data ? normalizeBlocks(data.blocks) : defaultHomeBlocks(),
+    blocks: data ? normalizeBlocks(data.blocks) : defaultBlocksFor(layout.id),
   };
 }

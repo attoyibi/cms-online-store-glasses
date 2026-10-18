@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Menu, Search } from "lucide-react";
 
 import { CartButton } from "@/components/cart/cart-button";
+import { WhatsAppButton } from "@/components/whatsapp-button";
 import { useStoreSettings } from "@/components/store-settings-provider";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +21,19 @@ import { mainNav } from "@/lib/site-config";
 import type { Category } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-export function SiteHeader({ categories }: { categories: Category[] }) {
+export function SiteHeader({
+  categories,
+  layout,
+}: {
+  categories: Category[];
+  /** Tema aktif; "etalase" memakai header gelap dengan tombol WhatsApp */
+  layout?: string;
+}) {
+  const dark = layout === "etalase";
+  // Tombol ikon di atas latar gelap
+  const ghost = dark
+    ? "text-ink-foreground hover:bg-ink-foreground/10 hover:text-ink-foreground"
+    : "";
   const pathname = usePathname();
   const settings = useStoreSettings();
   const [scrolled, setScrolled] = useState(false);
@@ -58,9 +71,13 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
       <header
         className={cn(
           "sticky top-0 z-50 border-b transition-colors duration-200",
-          scrolled
-            ? "border-border bg-background/85 backdrop-blur-md"
-            : "border-transparent bg-background",
+          dark
+            ? scrolled
+              ? "border-ink-foreground/10 bg-ink/90 text-ink-foreground backdrop-blur-md"
+              : "border-ink-foreground/10 bg-ink text-ink-foreground"
+            : scrolled
+              ? "border-border bg-background/85 backdrop-blur-md"
+              : "border-transparent bg-background",
         )}
       >
         <div className="container-page flex h-16 items-center gap-3">
@@ -69,7 +86,7 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="lg:hidden"
+                className={cn("lg:hidden", ghost)}
                 aria-label="Buka menu navigasi"
               >
                 <Menu className="size-5" aria-hidden="true" />
@@ -125,10 +142,15 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "rounded-lg px-3 py-2 text-sm transition-colors hover:text-foreground",
+                  "rounded-lg px-3 py-2 text-sm transition-colors",
+                  dark ? "hover:text-ink-foreground" : "hover:text-foreground",
                   pathname === link.href
-                    ? "font-medium text-foreground"
-                    : "text-muted-foreground",
+                    ? dark
+                      ? "font-medium text-ink-foreground"
+                      : "font-medium text-foreground"
+                    : dark
+                      ? "text-ink-foreground/70"
+                      : "text-muted-foreground",
                 )}
               >
                 {link.label}
@@ -137,17 +159,26 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-0.5">
+            {dark && (
+              <WhatsAppButton
+                size="sm"
+                variant="default"
+                label="Konsultasi via WhatsApp"
+                className="mr-2 hidden bg-whatsapp text-white hover:bg-whatsapp/90 sm:inline-flex"
+              />
+            )}
             <Button
               asChild
               variant="ghost"
               size="icon"
               aria-label="Cari produk"
+              className={ghost}
             >
               <Link href="/produk">
                 <Search className="size-5" aria-hidden="true" />
               </Link>
             </Button>
-            <CartButton />
+            <CartButton className={ghost} />
           </div>
         </div>
       </header>

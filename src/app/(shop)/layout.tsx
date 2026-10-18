@@ -4,6 +4,7 @@ import { CartSheet } from "@/components/cart/cart-sheet";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { WhatsAppFloat } from "@/components/layout/whatsapp-float";
+import { getLayout } from "@/lib/layouts";
 import { themeCss } from "@/lib/themes";
 import {
   getCategories,
@@ -26,7 +27,7 @@ export default async function ShopLayout({ children }: LayoutProps<"/">) {
   return (
     <CartProvider>
       {css && <style dangerouslySetInnerHTML={{ __html: css }} />}
-      <SiteHeader categories={categories} />
+      <SiteHeader categories={categories} layout={getLayout(settings.layout).id} />
       <main className="flex-1">{children}</main>
       <SiteFooter
         categories={categories}

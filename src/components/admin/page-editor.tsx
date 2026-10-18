@@ -42,12 +42,12 @@ import {
 import { createBlock, newBlockId } from "@/lib/blocks/normalize";
 import {
   BLOCK_DEFS,
-  defaultHomeBlocks,
   defaultPropsOf,
 } from "@/lib/blocks/registry";
 import { MAX_BLOCKS } from "@/lib/blocks/schema";
 import type { Block, BlockType, PageSource } from "@/lib/blocks/types";
 import { cn } from "@/lib/utils";
+import { defaultBlocksFor } from "@/themes/defaults";
 
 export type EditorActions = {
   save: (json: string) => Promise<EditorResult>;
@@ -95,6 +95,7 @@ export function PageEditor({
   source,
   unpublished: initialUnpublished,
   schemaReady,
+  layout,
   actions,
   previewHref,
   livePreviewSrc = "/pratinjau/langsung",
@@ -103,6 +104,8 @@ export function PageEditor({
   source: PageSource;
   unpublished: boolean;
   schemaReady: boolean;
+  /** Tata letak yang sedang diedit; menentukan susunan bawaan saat "kembalikan" */
+  layout: string;
   actions: EditorActions;
   /** Pratinjau draft di tab baru */
   previewHref: string;
@@ -289,7 +292,7 @@ export function PageEditor({
   }
 
   function resetAll() {
-    apply(() => defaultHomeBlocks());
+    apply(() => defaultBlocksFor(layout));
     setSelectedId(null);
     setTab("outline");
     setFormVersion((version) => version + 1);
@@ -357,7 +360,7 @@ export function PageEditor({
       return;
     }
     run(actions.discard, (result) => {
-      const restored = result.blocks ?? defaultHomeBlocks();
+      const restored = result.blocks ?? defaultBlocksFor(layout);
       dispatch({ type: "reset", blocks: restored });
       setSavedJson(JSON.stringify(restored));
       setUnpublished(false);

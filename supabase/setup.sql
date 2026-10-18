@@ -232,6 +232,12 @@ alter table public.store_settings
       and octet_length(theme_colors::text) <= 2000
     );
 
+-- Tata letak (v11): id tata letak halaman depan, mis. "klasik". Daftarnya ada
+-- di aplikasi (src/lib/layouts.ts). Kosong = tata letak bawaan (klasik).
+alter table public.store_settings
+  add column if not exists layout text
+    check (layout is null or char_length(layout) <= 30);
+
 -- Index unik pada ekspresi konstan → tabel ini tak pernah punya
 -- lebih dari satu baris.
 create unique index if not exists store_settings_singleton_idx
@@ -614,7 +620,8 @@ values
   ('v7', 'Pengaturan SEO dan bisnis lokal (seo_settings): kota, alamat situs, data terstruktur, verifikasi, pelacakan'),
   ('v8', 'SEO per produk, kategori, dan halaman statis (seo_title, seo_description, seo_pages)'),
   ('v9', 'Pengalihan alamat (seo_redirects) dan teks alternatif foto produk (image_alts)'),
-  ('v10', 'Tema warna toko (store_settings.theme dan theme_colors)')
+  ('v10', 'Tema warna toko (store_settings.theme dan theme_colors)'),
+  ('v11', 'Tata letak halaman depan (store_settings.layout)')
 on conflict (version) do nothing;
 
 -- -------------------------------------------------------------
@@ -630,7 +637,18 @@ on conflict (version) do nothing;
 -- -------------------------------------------------------------
 -- Ringkasan — hasil yang muncul setelah file ini dijalankan
 -- -------------------------------------------------------------
+-- Dua penanda versi, supaya jelas apa yang sebenarnya terpasang:
+--   versi_file      versi file INI (tertulis di bawah). Bila yang tampil lebih
+--                   kecil dari yang diharapkan, yang dijalankan adalah salinan
+--                   lama file ini — ambil ulang dari GitHub lalu jalankan lagi.
+--   versi_database  versi tertinggi yang tercatat di tabel schema_versions.
+-- Saat menambah perubahan baru: naikkan versi_file DAN tambah barisnya di
+-- bagian 12.
 select
+  'v11'                                           as versi_file,
+  (select 'v' || max(substring(version from 2)::int)
+     from public.schema_versions
+    where version ~ '^v[0-9]+$')                  as versi_database,
   (select count(*) from information_schema.tables
     where table_schema = 'public'
       and table_name in (
@@ -639,7 +657,10 @@ select
         'product_variants', 'site_pages', 'site_page_drafts', 'seo_settings', 'seo_pages', 'seo_redirects'
       ))                                          as tabel_terpasang_dari_13,
   (select count(*) from public.admins)            as jumlah_admin,
-  (select string_agg(version, ', ' order by version)
+  (select string_agg(
+            version, ', '
+            order by case when version ~ '^v[0-9]+$'
+                          then substring(version from 2)::int end)
      from public.schema_versions)                 as versi_tercatat,
   case
     when (select count(*) from public.admins) = 0

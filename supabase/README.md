@@ -15,7 +15,8 @@ supabase/
 
 1. Buat proyek di [supabase.com](https://supabase.com/dashboard).
 2. **SQL Editor** → tempel seluruh isi [`setup.sql`](setup.sql) → **Run**.
-   Hasil yang benar: satu baris ringkasan dengan `tabel_terpasang_dari_13 = 13`
+   Hasil yang benar: satu baris ringkasan dengan `versi_file` dan `versi_database`
+   sama-sama versi terbaru (mis. `v11`), `tabel_terpasang_dari_13 = 13`
    dan status `LANGKAH BERIKUTNYA: daftarkan akun admin`.
 3. **Authentication → Users → Add user**, isi email dan password, dan centang
    **Auto Confirm User**.

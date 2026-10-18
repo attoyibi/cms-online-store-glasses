@@ -11,6 +11,17 @@
   // Optimasi gambar lewat Cloudflare Images
   "images": {
     "binding": "IMAGES"
+  },
+
+  // Pengaturan untuk Preview (build cabang selain main di Workers Builds,
+  // perintah `wrangler preview`). Nilai tingkat atas di atas hanya berlaku
+  // untuk produksi, jadi binding gambar harus ditulis ulang di sini —
+  // tanpa blok ini build cabang gagal dengan "missing a `previews` block"
+  // walau build Next.js-nya sendiri sukses.
+  "previews": {
+    "images": {
+      "binding": "IMAGES"
+    }
   }
 
   // Sengaja TIDAK ada "vars" di sini.

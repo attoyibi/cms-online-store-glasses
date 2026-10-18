@@ -83,16 +83,16 @@ export function ThemePicker({
       <input type="hidden" name="theme_colors" value={JSON.stringify(overrides)} />
 
       <div className="space-y-1">
-        <legend className="text-base font-semibold">Tema warna</legend>
+        <legend className="text-base font-semibold">Palet warna</legend>
         <p className="text-sm text-muted-foreground">
-          Pilih tema, lalu sesuaikan warnanya bila perlu. Berlaku untuk situs
-          toko; panel admin tidak ikut berubah.
+          Pilih palet, lalu sesuaikan warnanya bila perlu. Berlaku untuk semua
+          tema; panel admin tidak ikut berubah.
         </p>
       </div>
 
       <div
         role="radiogroup"
-        aria-label="Tema warna"
+        aria-label="Palet warna"
         className="grid grid-cols-2 gap-3 sm:grid-cols-3"
       >
         {THEMES.map((t) => {

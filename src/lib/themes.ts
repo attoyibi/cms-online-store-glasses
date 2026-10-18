@@ -42,7 +42,7 @@ export const SLOT_INFO: SlotInfo[] = [
   { slot: "accent", label: "Warna aksen", hint: "Latar tipis di hero dan menu terpilih", group: "umum" },
   { slot: "background", label: "Latar halaman", hint: "Pilih warna terang agar teks mudah dibaca", group: "umum" },
   { slot: "foreground", label: "Warna teks", hint: "Teks utama di seluruh situs", group: "umum" },
-  { slot: "ink", label: "Bagian gelap", hint: "Banner ajakan dan strip kepercayaan", group: "komponen" },
+  { slot: "ink", label: "Bagian gelap", hint: "Banner ajakan, strip kepercayaan, dan header tema Etalase", group: "komponen" },
   { slot: "announcement", label: "Bar pengumuman", hint: "Bar tipis di paling atas", group: "komponen" },
   { slot: "footer", label: "Footer", hint: "Bagian paling bawah situs", group: "komponen" },
   { slot: "whatsapp", label: "Tombol WhatsApp", hint: "Tombol mengambang di pojok kanan bawah", group: "komponen" },
