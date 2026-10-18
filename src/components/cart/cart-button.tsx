@@ -4,8 +4,9 @@ import { ShoppingBag } from "lucide-react";
 
 import { useCart } from "@/components/cart/cart-provider";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export function CartButton() {
+export function CartButton({ className }: { className?: string }) {
   const { count, ready, setOpen } = useCart();
 
   return (
@@ -13,7 +14,7 @@ export function CartButton() {
       variant="ghost"
       size="icon"
       onClick={() => setOpen(true)}
-      className="relative"
+      className={cn("relative", className)}
       aria-label={
         count > 0 ? `Buka keranjang, ${count} item` : "Buka keranjang, kosong"
       }

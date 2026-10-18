@@ -3,8 +3,8 @@ import "server-only";
 import { connection } from "next/server";
 
 import { normalizeBlocks } from "@/lib/blocks/normalize";
-import { defaultBlocksFor } from "@/lib/blocks/registry";
 import { getLayout } from "@/lib/layouts";
+import { defaultBlocksFor } from "@/themes/defaults";
 import type { Block, PageSource } from "@/lib/blocks/types";
 import { requireAdmin } from "@/lib/supabase/admin";
 import { isSchemaMissing } from "@/lib/supabase/env";

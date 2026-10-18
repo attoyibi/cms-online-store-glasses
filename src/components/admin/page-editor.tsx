@@ -42,12 +42,12 @@ import {
 import { createBlock, newBlockId } from "@/lib/blocks/normalize";
 import {
   BLOCK_DEFS,
-  defaultBlocksFor,
   defaultPropsOf,
 } from "@/lib/blocks/registry";
 import { MAX_BLOCKS } from "@/lib/blocks/schema";
 import type { Block, BlockType, PageSource } from "@/lib/blocks/types";
 import { cn } from "@/lib/utils";
+import { defaultBlocksFor } from "@/themes/defaults";
 
 export type EditorActions = {
   save: (json: string) => Promise<EditorResult>;

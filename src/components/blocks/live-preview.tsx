@@ -43,12 +43,15 @@ export function LivePreview({
   products,
   categories,
   vars,
+  layout,
 }: {
   initialBlocks: Block[];
   products: Product[];
   categories: Category[];
   /** Nilai {kota}/{toko}/{provinsi}, supaya pratinjau sama dengan situs asli */
   vars: TextVars;
+  /** Tema yang sedang diedit */
+  layout: string;
 }) {
   const [blocks, setBlocks] = useState<Block[]>(initialBlocks);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -148,6 +151,7 @@ export function LivePreview({
                 products={productsFor(block, products)}
                 categories={categories}
                 priority={block.id === priorityId}
+                layout={layout}
               />
             )}
 

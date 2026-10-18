@@ -37,6 +37,7 @@ export default async function LivePreviewPage() {
       products={products}
       categories={categories}
       vars={textVars(identity)}
+      layout={state.layout}
     />
   );
 }

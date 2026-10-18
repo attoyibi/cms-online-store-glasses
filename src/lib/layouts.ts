@@ -37,7 +37,7 @@ export const LAYOUTS: Layout[] = [
     description:
       "Header dan hero gelap, kartu fitur, grid produk dengan tombol pesan WhatsApp di tiap kartu.",
     pageSlug: "home-etalase",
-    available: false,
+    available: true,
   },
 ];
 

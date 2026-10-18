@@ -10,6 +10,8 @@ import { Testimonials } from "@/components/sections/testimonials";
 import { TrustBar } from "@/components/sections/trust-bar";
 import type { Block } from "@/lib/blocks/types";
 import type { Category, Product } from "@/lib/types";
+import { getThemeViews } from "@/themes/views";
+import type { BlockViewContext } from "@/themes/types";
 
 /**
  * Tampilan satu blok. SINKRON dan tanpa pengambilan data — produk dan
@@ -23,6 +25,7 @@ export function BlockView({
   products,
   categories,
   priority,
+  layout,
 }: {
   block: Block;
   /** Produk untuk blok ini (deretan produk atau lensa) */
@@ -30,7 +33,14 @@ export function BlockView({
   categories: Category[];
   /** Gambar produk dimuat lebih awal (deretan produk pertama di halaman) */
   priority: boolean;
+  /** Tema yang aktif; tema boleh menggambar ulang jenis blok tertentu */
+  layout?: string;
 }) {
+  const themed = getThemeViews(layout)[block.type] as
+    | ((block: Block, context: BlockViewContext) => React.ReactNode)
+    | undefined;
+  if (themed) return themed(block, { products, categories, priority });
+
   switch (block.type) {
     case "hero":
       return <Hero {...block.props} />;

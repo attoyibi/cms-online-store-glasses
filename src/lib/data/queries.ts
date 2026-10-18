@@ -8,8 +8,8 @@ import {
   sampleProducts,
 } from "@/lib/data/sample-data";
 import { normalizeBlocks } from "@/lib/blocks/normalize";
-import { defaultBlocksFor } from "@/lib/blocks/registry";
 import { getLayout } from "@/lib/layouts";
+import { defaultBlocksFor } from "@/themes/defaults";
 import type { Block } from "@/lib/blocks/types";
 import {
   applyFilters,

@@ -6,7 +6,9 @@ import {
   getCategories,
   getProducts,
   getSiteIdentity,
+  getStoreSettings,
 } from "@/lib/data/queries";
+import { getLayout } from "@/lib/layouts";
 import { resolveVarsDeep, textVars } from "@/lib/site-identity";
 import type { Category, Product } from "@/lib/types";
 
@@ -55,7 +57,12 @@ async function loadData(block: Block): Promise<BlockData> {
  */
 export async function BlockRenderer({ blocks }: { blocks: Block[] }) {
   // {kota}, {toko}, {provinsi} di teks blok diganti dengan identitas toko ini
-  const vars = textVars(await getSiteIdentity());
+  const [identity, settings] = await Promise.all([
+    getSiteIdentity(),
+    getStoreSettings(),
+  ]);
+  const vars = textVars(identity);
+  const layout = getLayout(settings.layout).id;
   const visible = resolveVarsDeep(
     blocks.filter((block) => !block.hidden),
     vars,
@@ -73,6 +80,7 @@ export async function BlockRenderer({ blocks }: { blocks: Block[] }) {
             products={data[index].products}
             categories={data[index].categories}
             priority={block.id === priorityId}
+            layout={layout}
           />
         </Fragment>
       ))}
