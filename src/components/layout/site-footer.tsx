@@ -21,7 +21,7 @@ export function SiteFooter({
   );
 
   return (
-    <footer className="mt-24 border-t bg-ink text-ink-foreground">
+    <footer className="scope-footer mt-24 border-t bg-ink text-ink-foreground">
       <div className="container-page grid gap-10 py-14 md:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-4">
           <p className="text-lg font-semibold tracking-tight">

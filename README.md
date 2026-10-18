@@ -38,6 +38,7 @@ lewat halaman `/admin` yang dilindungi login.
 - CRUD kategori dengan pengaturan urutan tampil
 - Kelola opsi filter (bentuk, material, warna) tanpa perlu menyentuh SQL
 - Pengaturan toko: nama, nomor WhatsApp, alamat, jam buka, dan bar pengumuman
+- **Tema warna**: pilih salah satu dari 6 tema (Jade bawaan, Biru Laut, Mawar, Karamel, Ungu, Hitam Putih), lalu sesuaikan warna utama, sekunder, aksen, latar, teks, serta warna per komponen (bar pengumuman, footer, tombol WhatsApp, label diskon) dengan pratinjau langsung. Tersimpan di Supabase (`store_settings.theme` dan `theme_colors`, butuh `supabase/setup.sql` v10); hanya mengubah situs toko, panel admin tetap hijau. Menambah tema baru cukup menambah satu entri di `src/lib/themes.ts`, tanpa SQL
 - **Halaman Depan**: halaman depan tersusun dari blok (hero, keunggulan, kategori, deretan produk, tentang, lensa, cara pesan, testimoni, FAQ, banner). Editornya menampilkan **pratinjau langsung** halaman asli di sebelah form (mode Desktop/Tablet/HP): klik bagian mana pun untuk mengeditnya dan hasilnya langsung terlihat. Admin bisa mengedit isi tiap blok, mengubah urutan, menyembunyikan, menduplikasi, dan menambah blok baru, dengan **undo/redo** (Ctrl+Z), draft, lalu terbitkan. Butuh `supabase/setup.sql`
 
 ## Menjalankan secara lokal

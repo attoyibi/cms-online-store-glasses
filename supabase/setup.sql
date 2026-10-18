@@ -219,6 +219,19 @@ create table if not exists public.store_settings (
   updated_at      timestamptz not null default now()
 );
 
+-- Tema warna (v10): id tema + penyesuaian per slot, mis.
+-- {"primary": "#1e4f9c"}. Daftar tema ada di aplikasi (src/lib/themes.ts),
+-- jadi menambah tema tidak perlu SQL. Kosong = tema bawaan (jade).
+alter table public.store_settings
+  add column if not exists theme text
+    check (theme is null or char_length(theme) <= 30);
+alter table public.store_settings
+  add column if not exists theme_colors jsonb not null default '{}'::jsonb
+    check (
+      jsonb_typeof(theme_colors) = 'object'
+      and octet_length(theme_colors::text) <= 2000
+    );
+
 -- Index unik pada ekspresi konstan → tabel ini tak pernah punya
 -- lebih dari satu baris.
 create unique index if not exists store_settings_singleton_idx
@@ -600,7 +613,8 @@ values
   ('v6', 'Semua digabung menjadi satu file setup.sql yang aman dijalankan berulang'),
   ('v7', 'Pengaturan SEO dan bisnis lokal (seo_settings): kota, alamat situs, data terstruktur, verifikasi, pelacakan'),
   ('v8', 'SEO per produk, kategori, dan halaman statis (seo_title, seo_description, seo_pages)'),
-  ('v9', 'Pengalihan alamat (seo_redirects) dan teks alternatif foto produk (image_alts)')
+  ('v9', 'Pengalihan alamat (seo_redirects) dan teks alternatif foto produk (image_alts)'),
+  ('v10', 'Tema warna toko (store_settings.theme dan theme_colors)')
 on conflict (version) do nothing;
 
 -- -------------------------------------------------------------
