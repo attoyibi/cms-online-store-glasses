@@ -232,6 +232,12 @@ alter table public.store_settings
       and octet_length(theme_colors::text) <= 2000
     );
 
+-- Tata letak (v11): id tata letak halaman depan, mis. "klasik". Daftarnya ada
+-- di aplikasi (src/lib/layouts.ts). Kosong = tata letak bawaan (klasik).
+alter table public.store_settings
+  add column if not exists layout text
+    check (layout is null or char_length(layout) <= 30);
+
 -- Index unik pada ekspresi konstan → tabel ini tak pernah punya
 -- lebih dari satu baris.
 create unique index if not exists store_settings_singleton_idx
@@ -614,7 +620,8 @@ values
   ('v7', 'Pengaturan SEO dan bisnis lokal (seo_settings): kota, alamat situs, data terstruktur, verifikasi, pelacakan'),
   ('v8', 'SEO per produk, kategori, dan halaman statis (seo_title, seo_description, seo_pages)'),
   ('v9', 'Pengalihan alamat (seo_redirects) dan teks alternatif foto produk (image_alts)'),
-  ('v10', 'Tema warna toko (store_settings.theme dan theme_colors)')
+  ('v10', 'Tema warna toko (store_settings.theme dan theme_colors)'),
+  ('v11', 'Tata letak halaman depan (store_settings.layout)')
 on conflict (version) do nothing;
 
 -- -------------------------------------------------------------

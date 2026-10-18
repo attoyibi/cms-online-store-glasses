@@ -3,7 +3,8 @@ import "server-only";
 import { connection } from "next/server";
 
 import { normalizeBlocks } from "@/lib/blocks/normalize";
-import { defaultHomeBlocks } from "@/lib/blocks/registry";
+import { defaultBlocksFor } from "@/lib/blocks/registry";
+import { getLayout } from "@/lib/layouts";
 import type { Block, PageSource } from "@/lib/blocks/types";
 import { requireAdmin } from "@/lib/supabase/admin";
 import { isSchemaMissing } from "@/lib/supabase/env";
@@ -51,6 +52,8 @@ export async function loadProductFormOptions(): Promise<{
 }
 
 export type HomeEditorState = {
+  /** Tata letak yang sedang diedit — menentukan halaman mana yang dibuka */
+  layout: string;
   blocks: Block[];
   /** Dari mana `blocks` dibaca: draft, yang terbit, atau bawaan kode */
   source: PageSource;
@@ -71,9 +74,17 @@ export async function loadHomeEditorState(): Promise<HomeEditorState> {
   await connection();
   const { supabase } = await requireAdmin();
 
+  // Kolom layout baru ada sejak v11; bila belum ada (error), pakai klasik.
+  const { data: settings } = await supabase
+    .from("store_settings")
+    .select("layout")
+    .limit(1)
+    .maybeSingle();
+  const layout = getLayout((settings as { layout?: string | null } | null)?.layout);
+
   const [draftResult, publishedResult] = await Promise.all([
-    supabase.from("site_page_drafts").select("blocks").eq("slug", "home").maybeSingle(),
-    supabase.from("site_pages").select("blocks").eq("slug", "home").maybeSingle(),
+    supabase.from("site_page_drafts").select("blocks").eq("slug", layout.pageSlug).maybeSingle(),
+    supabase.from("site_pages").select("blocks").eq("slug", layout.pageSlug).maybeSingle(),
   ]);
 
   const schemaReady = !(
@@ -83,11 +94,12 @@ export async function loadHomeEditorState(): Promise<HomeEditorState> {
   const published = publishedResult.data
     ? normalizeBlocks(publishedResult.data.blocks)
     : null;
-  const effectivePublished = published ?? defaultHomeBlocks();
+  const effectivePublished = published ?? defaultBlocksFor(layout.id);
 
   if (draftResult.data) {
     const draft = normalizeBlocks(draftResult.data.blocks);
     return {
+      layout: layout.id,
       blocks: draft,
       source: "draft",
       unpublished: JSON.stringify(draft) !== JSON.stringify(effectivePublished),
@@ -96,6 +108,7 @@ export async function loadHomeEditorState(): Promise<HomeEditorState> {
   }
 
   return {
+    layout: layout.id,
     blocks: effectivePublished,
     source: published ? "published" : "default",
     unpublished: false,

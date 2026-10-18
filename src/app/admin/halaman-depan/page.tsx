@@ -40,10 +40,11 @@ export default async function HomePageEditorPage() {
         unpublished={state.unpublished}
         schemaReady={state.schemaReady}
         previewHref="/pratinjau"
+        layout={state.layout}
         actions={{
-          save: saveHomeDraft,
-          publish: publishHome,
-          discard: discardHomeDraft,
+          save: saveHomeDraft.bind(null, state.layout),
+          publish: publishHome.bind(null, state.layout),
+          discard: discardHomeDraft.bind(null, state.layout),
         }}
       />
     </div>

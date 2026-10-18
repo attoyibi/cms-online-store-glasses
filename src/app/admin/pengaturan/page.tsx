@@ -32,6 +32,11 @@ export default async function AdminSettingsPage() {
     .select("theme, theme_colors")
     .limit(1);
 
+  const { error: layoutError } = await supabase
+    .from("store_settings")
+    .select("layout")
+    .limit(1);
+
   return (
     <div className="space-y-6">
       <header className="space-y-1">
@@ -42,7 +47,11 @@ export default async function AdminSettingsPage() {
         </p>
       </header>
 
-      <SettingsForm settings={settings} themeReady={!themeError} />
+      <SettingsForm
+        settings={settings}
+        themeReady={!themeError}
+        layoutReady={!layoutError}
+      />
     </div>
   );
 }

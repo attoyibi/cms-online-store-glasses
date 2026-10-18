@@ -14,6 +14,7 @@ import {
   type RawSeoForm,
 } from "@/lib/seo-validate";
 import { requireAdmin } from "@/lib/supabase/admin";
+import { LAYOUTS } from "@/lib/layouts";
 import { THEMES, sanitizeColors } from "@/lib/themes";
 import { isSchemaMissing } from "@/lib/supabase/env";
 import { describeAuthError, describeError } from "@/lib/supabase/errors";
@@ -671,6 +672,14 @@ export async function saveSettings(
     Object.assign(payload, {
       theme: THEMES.some((t) => t.id === themeId) ? themeId : null,
       theme_colors: sanitizeColors(colors),
+    });
+  }
+
+  // Sama seperti tema: hanya bila kolom layout (v11) sudah ada
+  if (formData.get("layout_present") === "1") {
+    const layoutId = String(formData.get("layout") ?? "");
+    Object.assign(payload, {
+      layout: LAYOUTS.some((l) => l.id === layoutId && l.available) ? layoutId : null,
     });
   }
 

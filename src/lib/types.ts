@@ -96,6 +96,8 @@ export type StoreSettings = {
   /** Id tema (lihat src/lib/themes.ts). Opsional: kolomnya baru ada sejak v10 */
   theme?: string | null;
   theme_colors?: Record<string, string> | null;
+  /** Id tata letak (lihat src/lib/layouts.ts). Opsional: kolomnya baru ada sejak v11 */
+  layout?: string | null;
 };
 
 export type CartItem = {

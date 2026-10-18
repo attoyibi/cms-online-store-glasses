@@ -8,7 +8,8 @@ import {
   sampleProducts,
 } from "@/lib/data/sample-data";
 import { normalizeBlocks } from "@/lib/blocks/normalize";
-import { defaultHomeBlocks } from "@/lib/blocks/registry";
+import { defaultBlocksFor } from "@/lib/blocks/registry";
+import { getLayout } from "@/lib/layouts";
 import type { Block } from "@/lib/blocks/types";
 import {
   applyFilters,
@@ -429,23 +430,26 @@ export async function isSchemaReady(): Promise<boolean> {
  * jadi situs tidak pernah kosong gara-gara data halaman bermasalah.
  */
 export async function getPublishedBlocks(): Promise<Block[]> {
+  const layout = getLayout((await getStoreSettings()).layout);
+  const defaults = () => defaultBlocksFor(layout.id);
+
   const supabase = await createClient();
-  if (!supabase) return defaultHomeBlocks();
+  if (!supabase) return defaults();
 
   const { data, error } = await supabase
     .from("site_pages")
     .select("blocks")
-    .eq("slug", "home")
+    .eq("slug", layout.pageSlug)
     .maybeSingle();
 
-  if (error || !data) return defaultHomeBlocks();
+  if (error || !data) return defaults();
 
   const blocks = normalizeBlocks(data.blocks);
 
   // Ada isi tapi tak satu pun valid (data rusak) — pakai bawaan, bukan halaman kosong.
   // Daftar yang memang kosong sengaja dibiarkan kosong.
   if (blocks.length === 0 && Array.isArray(data.blocks) && data.blocks.length > 0) {
-    return defaultHomeBlocks();
+    return defaults();
   }
   return blocks;
 }

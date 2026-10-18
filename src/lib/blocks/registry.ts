@@ -516,3 +516,15 @@ export function defaultHomeBlocks(): Block[] {
     { id: "ajakan", type: "cta", hidden: false, props: defaultPropsOf("cta") },
   ];
 }
+
+/**
+ * Susunan bawaan untuk satu tata letak. Tata letak yang belum punya susunan
+ * sendiri memakai susunan klasik.
+ */
+export function defaultBlocksFor(layoutId: string | null | undefined): Block[] {
+  switch (layoutId) {
+    // Tata letak lain ditambahkan sebagai `case` di sini.
+    default:
+      return defaultHomeBlocks();
+  }
+}
