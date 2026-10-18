@@ -55,14 +55,21 @@ async function loadData(block: Block): Promise<BlockData> {
  * Merender susunan blok halaman publik. Blok yang disembunyikan dilewati;
  * data tiap blok diambil bersamaan lalu diserahkan ke `BlockView`.
  */
-export async function BlockRenderer({ blocks }: { blocks: Block[] }) {
+export async function BlockRenderer({
+  blocks,
+  layout: layoutId,
+}: {
+  blocks: Block[];
+  /** Tema yang dipakai menggambar blok; kosong = tema yang aktif */
+  layout?: string;
+}) {
   // {kota}, {toko}, {provinsi} di teks blok diganti dengan identitas toko ini
   const [identity, settings] = await Promise.all([
     getSiteIdentity(),
     getStoreSettings(),
   ]);
   const vars = textVars(identity);
-  const layout = getLayout(settings.layout).id;
+  const layout = getLayout(layoutId ?? settings.layout).id;
   const visible = resolveVarsDeep(
     blocks.filter((block) => !block.hidden),
     vars,
