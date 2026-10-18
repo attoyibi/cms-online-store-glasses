@@ -50,7 +50,7 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
   return (
     <>
       {settings.announcement && (
-        <div className="bg-ink px-4 py-2 text-center text-xs text-ink-foreground">
+        <div className="scope-announcement bg-ink px-4 py-2 text-center text-xs text-ink-foreground">
           {settings.announcement}
         </div>
       )}

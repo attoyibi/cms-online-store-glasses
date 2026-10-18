@@ -93,6 +93,9 @@ export type StoreSettings = {
   instagram_url: string | null;
   open_hours: string | null;
   announcement: string | null;
+  /** Id tema (lihat src/lib/themes.ts). Opsional: kolomnya baru ada sejak v10 */
+  theme?: string | null;
+  theme_colors?: Record<string, string> | null;
 };
 
 export type CartItem = {

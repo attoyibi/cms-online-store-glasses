@@ -38,7 +38,7 @@ export function ProductCard({
 
         <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-3">
           {discount ? (
-            <span className="rounded-full bg-destructive px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
+            <span className="rounded-full bg-sale px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
               -{discount}%
             </span>
           ) : (
