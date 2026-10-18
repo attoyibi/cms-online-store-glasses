@@ -25,18 +25,6 @@ export default async function AdminSettingsPage() {
     announcement: null,
   };
 
-  // Kolom tema baru ada sejak setup.sql v10. Dicek terpisah: baris
-  // pengaturan bisa belum ada, jadi "kolom ada" tidak bisa dibaca dari `data`.
-  const { error: themeError } = await supabase
-    .from("store_settings")
-    .select("theme, theme_colors")
-    .limit(1);
-
-  const { error: layoutError } = await supabase
-    .from("store_settings")
-    .select("layout")
-    .limit(1);
-
   return (
     <div className="space-y-6">
       <header className="space-y-1">
@@ -47,11 +35,7 @@ export default async function AdminSettingsPage() {
         </p>
       </header>
 
-      <SettingsForm
-        settings={settings}
-        themeReady={!themeError}
-        layoutReady={!layoutError}
-      />
+      <SettingsForm settings={settings} />
     </div>
   );
 }

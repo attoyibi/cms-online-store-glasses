@@ -14,8 +14,6 @@ import {
   type RawSeoForm,
 } from "@/lib/seo-validate";
 import { requireAdmin } from "@/lib/supabase/admin";
-import { LAYOUTS } from "@/lib/layouts";
-import { THEMES, sanitizeColors } from "@/lib/themes";
 import { isSchemaMissing } from "@/lib/supabase/env";
 import { describeAuthError, describeError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
@@ -657,31 +655,6 @@ export async function saveSettings(
 
   if (!payload.store_name) return { error: "Nama toko wajib diisi." };
   if (!payload.whatsapp_number) return { error: "Nomor WhatsApp wajib diisi." };
-
-  // Tema ikut disimpan hanya bila form menandai (theme_present) bahwa kolomnya
-  // sudah ada — database yang belum menjalankan setup.sql v10 tetap bisa
-  // menyimpan pengaturan lainnya.
-  if (formData.get("theme_present") === "1") {
-    const themeId = String(formData.get("theme") ?? "");
-    let colors: unknown = {};
-    try {
-      colors = JSON.parse(String(formData.get("theme_colors") ?? "{}"));
-    } catch {
-      return { error: "Pilihan warna tidak terbaca. Muat ulang halaman lalu coba lagi." };
-    }
-    Object.assign(payload, {
-      theme: THEMES.some((t) => t.id === themeId) ? themeId : null,
-      theme_colors: sanitizeColors(colors),
-    });
-  }
-
-  // Sama seperti tema: hanya bila kolom layout (v11) sudah ada
-  if (formData.get("layout_present") === "1") {
-    const layoutId = String(formData.get("layout") ?? "");
-    Object.assign(payload, {
-      layout: LAYOUTS.some((l) => l.id === layoutId && l.available) ? layoutId : null,
-    });
-  }
 
   const id = String(formData.get("id") ?? "");
   const { error } = id

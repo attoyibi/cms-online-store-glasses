@@ -7,6 +7,7 @@ import {
   LayoutTemplate,
   LogOut,
   Package,
+  Palette,
   Search,
   Settings,
   SlidersHorizontal,
@@ -23,6 +24,7 @@ const links = [
   { href: "/admin/produk", label: "Produk", icon: Package },
   { href: "/admin/kategori", label: "Kategori", icon: Tags },
   { href: "/admin/atribut", label: "Atribut Filter", icon: SlidersHorizontal },
+  { href: "/admin/tampilan", label: "Tampilan", icon: Palette },
   { href: "/admin/pengaturan", label: "Pengaturan", icon: Settings },
   { href: "/admin/seo", label: "SEO & Toko", icon: Search },
 ];

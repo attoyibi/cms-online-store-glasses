@@ -7,8 +7,6 @@ import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { saveSettings, type ActionState } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LayoutPicker } from "@/components/admin/layout-picker";
-import { ThemePicker } from "@/components/admin/theme-picker";
 import { Label } from "@/components/ui/label";
 import type { StoreSettings } from "@/lib/types";
 
@@ -22,17 +20,7 @@ function SubmitButton() {
   );
 }
 
-export function SettingsForm({
-  settings,
-  themeReady,
-  layoutReady,
-}: {
-  settings: StoreSettings;
-  /** Kolom tema sudah ada di database (setup.sql v10 sudah dijalankan) */
-  themeReady: boolean;
-  /** Kolom tata letak sudah ada (setup.sql v11 sudah dijalankan) */
-  layoutReady: boolean;
-}) {
+export function SettingsForm({ settings }: { settings: StoreSettings }) {
   const [state, formAction] = useActionState<ActionState, FormData>(
     saveSettings,
     {},
@@ -144,37 +132,6 @@ export function SettingsForm({
           Muncul sebagai bar tipis di paling atas situs. Kosongkan untuk
           menyembunyikannya.
         </p>
-      </div>
-
-      {themeReady && (
-        <div className="border-t pt-5">
-          {layoutReady ? (
-            <LayoutPicker initialLayout={settings.layout ?? null} />
-          ) : (
-            <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-              Pilihan tata letak belum aktif. Jalankan{" "}
-              <code className="font-mono">supabase/setup.sql</code> versi
-              terbaru di SQL Editor Supabase (aman dijalankan berulang), lalu
-              muat ulang halaman ini.
-            </p>
-          )}
-        </div>
-      )}
-
-      <div className="border-t pt-5">
-        {themeReady ? (
-          <ThemePicker
-            initialTheme={settings.theme ?? null}
-            initialColors={settings.theme_colors ?? {}}
-          />
-        ) : (
-          <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-            Pilihan tema warna belum aktif. Jalankan{" "}
-            <code className="font-mono">supabase/setup.sql</code> versi terbaru
-            di SQL Editor Supabase (aman dijalankan berulang), lalu muat ulang
-            halaman ini.
-          </p>
-        )}
       </div>
 
       <div className="border-t pt-5">
