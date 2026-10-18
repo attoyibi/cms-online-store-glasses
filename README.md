@@ -38,7 +38,7 @@ lewat halaman `/admin` yang dilindungi login.
 - CRUD kategori dengan pengaturan urutan tampil
 - Kelola opsi filter (bentuk, material, warna) tanpa perlu menyentuh SQL
 - Pengaturan toko: nama, nomor WhatsApp, alamat, jam buka, dan bar pengumuman
-- **Tema warna**: pilih salah satu dari 6 tema (Jade bawaan, Biru Laut, Mawar, Karamel, Ungu, Hitam Putih), lalu sesuaikan warna utama, sekunder, aksen, latar, teks, serta warna per komponen (bar pengumuman, footer, tombol WhatsApp, label diskon) dengan pratinjau langsung. Tersimpan di Supabase (`store_settings.theme` dan `theme_colors`, butuh `supabase/setup.sql` v10); hanya mengubah situs toko, panel admin tetap hijau. Menambah tema baru cukup menambah satu entri di `src/lib/themes.ts`, tanpa SQL
+- **Tampilan** (menu Tampilan): pilih **tema** dari galeri (Klasik bawaan, atau Etalase dengan header dan hero gelap serta tombol Order via WhatsApp di tiap produk), lalu atur **palet warna** (Jade, Biru Laut, Mawar, Karamel, Ungu, Hitam Putih) dan warna per komponen (bar pengumuman, footer, tombol WhatsApp, label diskon) dengan pratinjau. Tiap tema punya halaman depan sendiri, jadi berpindah tema tidak menghapus editan di tema lain. Butuh `supabase/setup.sql` v10 dan v11. Panel admin tidak ikut berubah
 - **Halaman Depan**: halaman depan tersusun dari blok (hero, keunggulan, kategori, deretan produk, tentang, lensa, cara pesan, testimoni, FAQ, banner). Editornya menampilkan **pratinjau langsung** halaman asli di sebelah form (mode Desktop/Tablet/HP): klik bagian mana pun untuk mengeditnya dan hasilnya langsung terlihat. Admin bisa mengedit isi tiap blok, mengubah urutan, menyembunyikan, menduplikasi, dan menambah blok baru, dengan **undo/redo** (Ctrl+Z), draft, lalu terbitkan. Butuh `supabase/setup.sql`
 
 ## Menjalankan secara lokal
@@ -259,6 +259,18 @@ bila toko sudah ramai:
 - Batas ukuran/tipe file di sisi server untuk bucket `product-images`
   (sekarang divalidasi di browser; yang bisa mengunggah tetap hanya admin).
 - Log aktivitas admin dan fitur lupa password di dalam aplikasi.
+
+## Tema
+
+Tema = paket tampilan (header, cara tiap blok digambar, susunan halaman depan bawaan). Pemilik toko memilihnya di **Admin → Tampilan**; yang tersimpan di database hanya id-nya (`store_settings.layout`). Tema tidak dipasang lewat unggah file: kode baru lewat GitHub dan deploy, seperti pembaruan lain.
+
+Menambah tema baru:
+
+1. Daftarkan di `src/lib/layouts.ts` (id, nama, deskripsi, `pageSlug` halaman depan, `available`).
+2. Buat folder `src/themes/<id>/` berisi komponen dan susunan bawaan (`blocks.ts`).
+3. Sambungkan di `src/themes/views.tsx` (blok mana yang digambar ulang) dan `src/themes/defaults.ts`.
+
+Jenis blok yang tidak digambar ulang memakai tampilan klasik, dan isi (props) blok tetap sama, sehingga editor Halaman Depan, undo, dan pratinjau langsung bekerja tanpa perubahan. Menambah jenis blok baru dilakukan di `src/lib/blocks/registry.ts`.
 
 ## Catatan desain
 

@@ -637,7 +637,18 @@ on conflict (version) do nothing;
 -- -------------------------------------------------------------
 -- Ringkasan — hasil yang muncul setelah file ini dijalankan
 -- -------------------------------------------------------------
+-- Dua penanda versi, supaya jelas apa yang sebenarnya terpasang:
+--   versi_file      versi file INI (tertulis di bawah). Bila yang tampil lebih
+--                   kecil dari yang diharapkan, yang dijalankan adalah salinan
+--                   lama file ini — ambil ulang dari GitHub lalu jalankan lagi.
+--   versi_database  versi tertinggi yang tercatat di tabel schema_versions.
+-- Saat menambah perubahan baru: naikkan versi_file DAN tambah barisnya di
+-- bagian 12.
 select
+  'v11'                                           as versi_file,
+  (select 'v' || max(substring(version from 2)::int)
+     from public.schema_versions
+    where version ~ '^v[0-9]+$')                  as versi_database,
   (select count(*) from information_schema.tables
     where table_schema = 'public'
       and table_name in (
@@ -646,7 +657,10 @@ select
         'product_variants', 'site_pages', 'site_page_drafts', 'seo_settings', 'seo_pages', 'seo_redirects'
       ))                                          as tabel_terpasang_dari_13,
   (select count(*) from public.admins)            as jumlah_admin,
-  (select string_agg(version, ', ' order by version)
+  (select string_agg(
+            version, ', '
+            order by case when version ~ '^v[0-9]+$'
+                          then substring(version from 2)::int end)
      from public.schema_versions)                 as versi_tercatat,
   case
     when (select count(*) from public.admins) = 0

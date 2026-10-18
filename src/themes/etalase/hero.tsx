@@ -24,7 +24,7 @@ export function EtalaseHero(props: Partial<HeroProps>) {
   ].filter((slide) => slide.src);
 
   return (
-    <section className="relative overflow-hidden bg-ink text-ink-foreground">
+    <section className="etalase-hero relative overflow-hidden bg-ink text-ink-foreground">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -right-32 -top-24 size-[34rem] rounded-full bg-primary/30 blur-3xl"
