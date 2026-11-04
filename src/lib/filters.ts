@@ -29,8 +29,25 @@ export type SizeSlug = (typeof SIZE_BUCKETS)[number]["slug"];
 export type PriceRange = { min: number | null; max: number | null };
 export type PriceBounds = { min: number; max: number; step: number };
 
+/** Pilihan cepat harga (tombol di atas slider); nilainya rentang biasa di URL */
+export const PRICE_PRESETS = [
+  { slug: "-299999", label: "Di bawah Rp300rb" },
+  { slug: "300000-700000", label: "Rp300rb – Rp700rb" },
+  { slug: "700001-1500000", label: "Rp700rb – Rp1,5jt" },
+  { slug: "1500001-", label: "Di atas Rp1,5jt" },
+] as const;
+
+/** Tautan lama sebelum slider memakai nama kelompok, bukan rentang */
+const LEGACY_PRICE_SLUGS: Record<string, string> = {
+  "di-bawah-300": "-299999",
+  "300-700": "300000-700000",
+  "700-1500": "700001-1500000",
+  "di-atas-1500": "1500001-",
+};
+
 export function parsePriceRange(slug: string | undefined): PriceRange | null {
   if (!slug) return null;
+  slug = LEGACY_PRICE_SLUGS[slug] ?? slug;
   const match = /^(\d*)-(\d*)$/.exec(slug);
   if (!match || (!match[1] && !match[2])) return null;
   return {
