@@ -1,3 +1,4 @@
+import { formatPrice } from "@/lib/format";
 import type { AttributeType, Product, ProductAttribute } from "@/lib/types";
 
 /**
@@ -19,14 +20,52 @@ export const SIZE_BUCKETS = [
 
 export type SizeSlug = (typeof SIZE_BUCKETS)[number]["slug"];
 
-export const PRICE_BUCKETS = [
-  { slug: "di-bawah-300", name: "Di bawah Rp300rb", max: 299_999 },
-  { slug: "300-700", name: "Rp300rb – Rp700rb", min: 300_000, max: 700_000 },
-  { slug: "700-1500", name: "Rp700rb – Rp1,5jt", min: 700_001, max: 1_500_000 },
-  { slug: "di-atas-1500", name: "Di atas Rp1,5jt", min: 1_500_001 },
-] as const;
+/**
+ * Filter harga berupa rentang, disimpan sebagai satu nilai "min-maks" di URL
+ * (mis. ?harga=62000-106000). Salah satu sisi boleh kosong: "62000-" atau
+ * "-106000". Batas slider dihitung dari harga produk yang ada, jadi tidak
+ * perlu diatur manual dan selalu sesuai isi katalog.
+ */
+export type PriceRange = { min: number | null; max: number | null };
+export type PriceBounds = { min: number; max: number; step: number };
 
-export type PriceSlug = (typeof PRICE_BUCKETS)[number]["slug"];
+export function parsePriceRange(slug: string | undefined): PriceRange | null {
+  if (!slug) return null;
+  const match = /^(\d*)-(\d*)$/.exec(slug);
+  if (!match || (!match[1] && !match[2])) return null;
+  return {
+    min: match[1] ? Number(match[1]) : null,
+    max: match[2] ? Number(match[2]) : null,
+  };
+}
+
+export function priceRangeSlug(min: number | null, max: number | null): string {
+  return `${min ?? ""}-${max ?? ""}`;
+}
+
+export function priceRangeLabel(slug: string): string {
+  const range = parsePriceRange(slug);
+  if (!range) return slug;
+  if (range.min != null && range.max != null) {
+    return `${formatPrice(range.min)} – ${formatPrice(range.max)}`;
+  }
+  if (range.min != null) return `Mulai ${formatPrice(range.min)}`;
+  return `Hingga ${formatPrice(range.max ?? 0)}`;
+}
+
+/** Batas slider dari harga produk yang ada, dibulatkan ke kelipatan langkah */
+export function computePriceBounds(products: Product[]): PriceBounds | null {
+  const prices = products.map((product) => product.price).filter((v) => v > 0);
+  if (prices.length === 0) return null;
+
+  const lo = Math.min(...prices);
+  const hi = Math.max(...prices);
+  const span = hi - lo;
+  const step = span > 2_000_000 ? 10_000 : span > 500_000 ? 5_000 : 1_000;
+  const min = Math.floor(lo / step) * step;
+  const max = Math.ceil(hi / step) * step;
+  return max > min ? { min, max, step } : null;
+}
 
 export type CatalogFilters = {
   bentuk: string[];
@@ -110,15 +149,6 @@ function sizeSlugOf(product: Product): SizeSlug | null {
   return bucket?.slug ?? null;
 }
 
-function priceSlugOf(product: Product): PriceSlug | null {
-  const bucket = PRICE_BUCKETS.find(
-    (item) =>
-      product.price >= ("min" in item ? item.min : -Infinity) &&
-      product.price <= ("max" in item ? item.max : Infinity),
-  );
-  return bucket?.slug ?? null;
-}
-
 /** Nilai produk untuk satu dimensi filter. Selalu array agar seragam. */
 function valuesFor(product: Product, key: keyof CatalogFilters): string[] {
   switch (key) {
@@ -134,10 +164,9 @@ function valuesFor(product: Product, key: keyof CatalogFilters): string[] {
     }
     case "merek":
       return product.brand ? [product.brand] : [];
-    case "harga": {
-      const price = priceSlugOf(product);
-      return price ? [price] : [];
-    }
+    case "harga":
+      // Dicocokkan sebagai rentang di matches(), bukan lewat daftar nilai
+      return [];
   }
 }
 
@@ -155,6 +184,15 @@ function matches(
     if (key === ignore) return true;
     const selected = filters[key];
     if (selected.length === 0) return true;
+
+    if (key === "harga") {
+      const range = parsePriceRange(selected[0]);
+      if (!range) return true;
+      return (
+        product.price >= (range.min ?? -Infinity) &&
+        product.price <= (range.max ?? Infinity)
+      );
+    }
 
     const values = valuesFor(product, key);
     return selected.some((slug) => values.includes(slug));
@@ -179,7 +217,10 @@ export type FacetOption = {
   hint?: string;
 };
 
-export type Facets = Record<keyof CatalogFilters, FacetOption[]>;
+export type Facets = Record<keyof CatalogFilters, FacetOption[]> & {
+  /** Batas slider harga; null bila harga produk tidak beragam */
+  priceBounds: PriceBounds | null;
+};
 
 /**
  * Hitung jumlah produk per opsi.
@@ -225,7 +266,6 @@ export function buildFacets(
   };
 
   const sizeCounts = tally("ukuran");
-  const priceCounts = tally("harga");
   const brandCounts = tally("merek");
 
   return {
@@ -240,13 +280,8 @@ export function buildFacets(
     })).filter(
       (option) => option.count > 0 || filters.ukuran.includes(option.slug),
     ),
-    harga: PRICE_BUCKETS.map((bucket) => ({
-      slug: bucket.slug,
-      name: bucket.name,
-      count: priceCounts.get(bucket.slug) ?? 0,
-    })).filter(
-      (option) => option.count > 0 || filters.harga.includes(option.slug),
-    ),
+    harga: [],
+    priceBounds: computePriceBounds(products),
     merek: [...brandCounts.entries()]
       .map(([slug, count]) => ({ slug, name: slug, count }))
       .sort((a, b) => a.name.localeCompare(b.name, "id")),
@@ -259,6 +294,7 @@ export function labelFor(
   slug: string,
   facets: Facets,
 ): string {
+  if (key === "harga") return priceRangeLabel(slug);
   return facets[key].find((option) => option.slug === slug)?.name ?? slug;
 }
 

@@ -59,6 +59,12 @@ export function useCatalogFilters(basePath: string) {
     [filters, push],
   );
 
+  const setGroup = useCallback(
+    (key: keyof CatalogFilters, values: string[]) =>
+      push({ ...filters, [key]: values }),
+    [filters, push],
+  );
+
   const clearGroup = useCallback(
     (key: keyof CatalogFilters) => push({ ...filters, [key]: [] }),
     [filters, push],
@@ -74,5 +80,5 @@ export function useCatalogFilters(basePath: string) {
     );
   }, [basePath, router, searchParams]);
 
-  return { filters, toggle, clearGroup, clearAll, isPending };
+  return { filters, toggle, setGroup, clearGroup, clearAll, isPending };
 }
