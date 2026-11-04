@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ImagePlus, Loader2, Plus, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ImageCropper, MAX_SOURCE_BYTES } from "@/components/admin/image-cropper";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import { describeError } from "@/lib/supabase/errors";
@@ -13,7 +14,6 @@ import { cn } from "@/lib/utils";
 const BUCKET = "product-images";
 /** SVG sengaja tidak diizinkan karena bisa memuat skrip */
 const ACCEPTED = ["image/png", "image/jpeg", "image/webp", "image/avif"];
-const MAX_BYTES = 5 * 1024 * 1024;
 
 /**
  * Mengelola daftar URL gambar produk. Nilainya dikirim lewat satu input
@@ -29,8 +29,14 @@ export function ImageUploader({
   defaultAlts,
   altsColumnExists = false,
   altFallback,
+  aspect = 1,
+  outputWidth = 1200,
 }: {
   name: string;
+  /** Rasio bingkai hasil (lebar / tinggi), mis. 1 = persegi, 1200/630 = gambar bagikan */
+  aspect?: number;
+  /** Lebar hasil akhir dalam piksel */
+  outputWidth?: number;
   defaultValue: string[];
   /** Dipanggil setiap daftar gambar berubah — untuk dipakai sebagai input terkontrol */
   onChange?: (images: string[]) => void;
@@ -67,63 +73,90 @@ export function ImageUploader({
   const [manualUrl, setManualUrl] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
 
-  async function handleFiles(files: FileList | null) {
-    if (!files?.length) return;
+  /** Berkas yang lolos pemeriksaan dan menunggu diatur di dialog; yang pertama sedang dibuka */
+  const [queue, setQueue] = useState<File[]>([]);
 
+  function handleFiles(files: FileList | null) {
+    if (!files?.length) return;
+    setError(null);
+
+    const accepted: File[] = [];
+    const problems: string[] = [];
+    for (const file of Array.from(files)) {
+      if (!ACCEPTED.includes(file.type)) {
+        problems.push(`${file.name}: hanya PNG, JPG, WEBP, atau AVIF.`);
+      } else if (file.size > MAX_SOURCE_BYTES) {
+        problems.push(
+          `${file.name}: ${(file.size / 1024 / 1024).toFixed(1)} MB, melebihi 10 MB.`,
+        );
+      } else {
+        accepted.push(file);
+      }
+    }
+    if (problems.length) setError(problems.join(" "));
+    // Mode single hanya memakai satu gambar
+    setQueue(single ? accepted.slice(0, 1) : accepted);
+    if (fileInput.current) fileInput.current.value = "";
+  }
+
+  /** Dipanggil dialog setelah gambar diatur: unggah hasilnya lalu lanjut ke berkas berikutnya */
+  async function uploadCropped(file: File) {
     const supabase = createClient();
     if (!supabase) {
       setError("Supabase belum dikonfigurasi — tempel URL gambar manual.");
+      setQueue([]);
       return;
     }
 
-    setError(null);
     setUploading(true);
-
     try {
-      const uploaded: string[] = [];
+      const path = `${crypto.randomUUID()}.webp`;
+      const { error: uploadError } = await supabase.storage
+        .from(BUCKET)
+        .upload(path, file, {
+          cacheControl: "31536000",
+          upsert: false,
+          contentType: "image/webp",
+        });
 
-      for (const file of Array.from(files)) {
-        if (!ACCEPTED.includes(file.type)) {
-          setError(`${file.name}: hanya PNG, JPG, WEBP, atau AVIF.`);
-          continue;
-        }
-        if (file.size > MAX_BYTES) {
-          setError(`${file.name}: ukuran melebihi 5 MB.`);
-          continue;
-        }
-
-        const extension = file.name.split(".").pop() ?? "jpg";
-        const path = `${crypto.randomUUID()}.${extension}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from(BUCKET)
-          .upload(path, file, { cacheControl: "31536000", upsert: false });
-
-        if (uploadError) {
-          setError(describeError(uploadError, `${file.name} gagal diunggah`));
-          continue;
-        }
-
+      if (uploadError) {
+        setError(describeError(uploadError, "Gambar gagal diunggah"));
+      } else {
         const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-        uploaded.push(data.publicUrl);
+        addImages([data.publicUrl]);
       }
-
-      if (uploaded.length) addImages(uploaded);
     } finally {
       setUploading(false);
-      if (fileInput.current) fileInput.current.value = "";
+      setQueue((current) => current.slice(1));
     }
   }
 
   function addManual() {
     const url = manualUrl.trim();
     if (!url) return;
+    if (!/^(https:\/\/|\/(?!\/))/.test(url)) {
+      setError("URL harus diawali https:// atau / (mis. /products/nama.webp).");
+      return;
+    }
+    setError(null);
     addImages([url]);
     setManualUrl("");
   }
 
+  const cropTitle =
+    queue.length > 1 ? `Atur gambar (1 dari ${queue.length})` : "Atur gambar";
+
   return (
     <div className="space-y-4">
+      <ImageCropper
+        key={`${queue.length}-${queue[0]?.name}-${queue[0]?.size}`}
+        file={queue[0] ?? null}
+        aspect={aspect}
+        outputWidth={outputWidth}
+        title={cropTitle}
+        onConfirm={uploadCropped}
+        onCancel={() => setQueue((current) => current.slice(1))}
+      />
       <input type="hidden" name={name} value={images.join("\n")} />
       {altName && (
         <>
@@ -242,8 +275,8 @@ export function ImageUploader({
         </Button>
         <p className="text-xs text-muted-foreground">
           {single
-            ? "PNG/JPG/WEBP, maks 5 MB."
-            : "PNG/JPG/WEBP, maks 5 MB. Gambar pertama jadi thumbnail."}
+            ? "PNG/JPG/WEBP, maks 10 MB. Bisa digeser dan di-zoom sebelum disimpan."
+            : "PNG/JPG/WEBP, maks 10 MB. Tiap gambar bisa digeser dan di-zoom dulu. Gambar pertama jadi thumbnail."}
         </p>
       </div>
 
@@ -257,7 +290,7 @@ export function ImageUploader({
               addManual();
             }
           }}
-          placeholder="atau tempel URL gambar, mis. /products/sena-round-sand-1.webp"
+          placeholder="atau tempel URL gambar (https://… atau /products/nama.webp)"
           aria-label="URL gambar"
         />
         <Button type="button" variant="secondary" onClick={addManual}>
