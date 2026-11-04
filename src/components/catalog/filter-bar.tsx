@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, Loader2, Search, SlidersHorizontal, X } from "lucide-react";
 
 import { FilterOptionList } from "@/components/catalog/filter-option-list";
+import { PriceRangeFilter } from "@/components/catalog/price-range-filter";
 import { ShapeFilter } from "@/components/catalog/shape-filter";
 import { useCatalogFilters } from "@/components/catalog/use-catalog-filters";
 import { Button } from "@/components/ui/button";
@@ -29,13 +30,13 @@ import {
   labelFor,
   type CatalogFilters,
   type Facets,
+  type PriceBounds,
 } from "@/lib/filters";
 import type { ProductSort } from "@/lib/data/queries";
 import { cn } from "@/lib/utils";
 
 /** Dimensi yang tampil sebagai dropdown; bentuk punya tampilannya sendiri */
 const DROPDOWN_GROUPS: (keyof CatalogFilters)[] = [
-  "harga",
   "material",
   "warna",
   "ukuran",
@@ -60,7 +61,7 @@ export function FilterBar({
   total: number;
   totalBeforeFilters: number;
 }) {
-  const { filters, toggle, clearGroup, clearAll, isPending } =
+  const { filters, toggle, setGroup, clearGroup, clearAll, isPending } =
     useCatalogFilters(basePath);
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -80,6 +81,14 @@ export function FilterBar({
       <div className="flex flex-wrap items-center gap-2">
         {/* Desktop — tiap dimensi punya dropdown sendiri */}
         <div className="hidden flex-wrap items-center gap-2 md:flex">
+          {facets.priceBounds && (
+            <PriceDropdown
+              bounds={facets.priceBounds}
+              selected={filters.harga[0]}
+              onApply={(slug) => setGroup("harga", [slug])}
+              onClear={() => clearGroup("harga")}
+            />
+          )}
           {DROPDOWN_GROUPS.map((group) => (
             <FilterDropdown
               key={group}
@@ -143,6 +152,8 @@ export function FilterBar({
         facets={facets}
         filters={filters}
         onToggle={toggle}
+        onSetGroup={setGroup}
+        onClearGroup={clearGroup}
         onClearAll={clearAll}
         total={total}
         activeCount={activeCount}
@@ -295,6 +306,58 @@ function FilterDropdown({
   );
 }
 
+function PriceDropdown({
+  bounds,
+  selected,
+  onApply,
+  onClear,
+}: {
+  bounds: PriceBounds;
+  selected: string | undefined;
+  onApply: (slug: string) => void;
+  onClear: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn(
+            "gap-1.5",
+            selected && "border-primary bg-primary/8 text-primary",
+          )}
+        >
+          {FILTER_GROUP_LABEL.harga}
+          {selected && <span className="tabular-nums">(1)</span>}
+          <ChevronDown className="size-3.5 opacity-60" aria-hidden="true" />
+        </Button>
+      </PopoverTrigger>
+
+      <PopoverContent align="start" className="w-80 p-4">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Filter berdasarkan harga
+        </p>
+        <PriceRangeFilter
+          bounds={bounds}
+          selected={selected}
+          idPrefix="d-harga"
+          onApply={(slug) => {
+            onApply(slug);
+            setOpen(false);
+          }}
+          onClear={() => {
+            onClear();
+            setOpen(false);
+          }}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 // ------------------------------------------------------------ chip aktif
 
 function ActiveFilterChips({
@@ -349,6 +412,8 @@ function FilterSheet({
   facets,
   filters,
   onToggle,
+  onSetGroup,
+  onClearGroup,
   onClearAll,
   total,
   activeCount,
@@ -358,6 +423,8 @@ function FilterSheet({
   facets: Facets;
   filters: CatalogFilters;
   onToggle: (key: keyof CatalogFilters, slug: string) => void;
+  onSetGroup: (key: keyof CatalogFilters, values: string[]) => void;
+  onClearGroup: (key: keyof CatalogFilters) => void;
   onClearAll: () => void;
   total: number;
   activeCount: number;
@@ -378,6 +445,20 @@ function FilterSheet({
         </SheetHeader>
 
         <div className="flex-1 divide-y overflow-y-auto px-5">
+          {facets.priceBounds && (
+            <section className="py-4">
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {FILTER_GROUP_LABEL.harga}
+              </h3>
+              <PriceRangeFilter
+                bounds={facets.priceBounds}
+                selected={filters.harga[0]}
+                idPrefix="m-harga"
+                onApply={(slug) => onSetGroup("harga", [slug])}
+                onClear={() => onClearGroup("harga")}
+              />
+            </section>
+          )}
           {DROPDOWN_GROUPS.map((group) =>
             facets[group].length === 0 ? null : (
               <section key={group} className="py-4">
