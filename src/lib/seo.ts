@@ -3,7 +3,7 @@ import type { Product } from "@/lib/types";
 import { hasVariants, priceRange } from "@/lib/variants";
 
 /**
- * Ubah path relatif (`/products/x.svg`) jadi URL penuh; URL penuh dibiarkan.
+ * Ubah path relatif (`/products/x.webp`) jadi URL penuh; URL penuh dibiarkan.
  * `base` adalah alamat situs dari identitas toko (Admin → SEO & Toko).
  */
 export function absoluteUrl(pathOrUrl: string, base: string): string {

@@ -50,7 +50,7 @@ export function isSafeLink(value: string): boolean {
 }
 
 /**
- * Gambar yang boleh dipakai: file milik situs ("/products/x.svg") atau file
+ * Gambar yang boleh dipakai: file milik situs ("/products/x.webp") atau file
  * di Supabase Storage proyek ini. Host lain ditolak karena next/image tidak
  * mengizinkannya dan akan membuat halaman error saat dirender.
  */

@@ -257,7 +257,7 @@ export function ImageUploader({
               addManual();
             }
           }}
-          placeholder="atau tempel URL gambar, mis. /products/round-sand.svg"
+          placeholder="atau tempel URL gambar, mis. /products/sena-round-sand-1.webp"
           aria-label="URL gambar"
         />
         <Button type="button" variant="secondary" onClick={addManual}>

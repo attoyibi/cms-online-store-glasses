@@ -46,3 +46,7 @@ next-env.d.ts
 .open-next/
 .wrangler/
 cloudflare-env.d.ts
+
+# foto mentah hasil AI (sudah dikompres ke public/products/*.webp)
+/gambar-ai/
+/public/products/generate-ai-belum-compress/

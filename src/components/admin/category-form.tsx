@@ -89,7 +89,7 @@ export function CategoryForm({
             id="image_url"
             name="image_url"
             defaultValue={category?.image_url ?? ""}
-            placeholder="/products/square-ink.svg"
+            placeholder="/products/arka-square-matte-black-1.webp"
           />
         </div>
 

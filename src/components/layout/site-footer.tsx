@@ -186,6 +186,12 @@ export function SiteFooter({
             pembayaran.
           </p>
         </div>
+        <div className="container-page pb-5 text-xs text-ink-foreground/40">
+          <p>
+            Foto produk pada situs ini dibuat dengan AI dan hanya sebagai
+            contoh.
+          </p>
+        </div>
       </div>
     </footer>
   );
