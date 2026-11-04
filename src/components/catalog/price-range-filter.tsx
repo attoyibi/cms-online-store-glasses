@@ -4,11 +4,13 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
+  PRICE_PRESETS,
   parsePriceRange,
   priceRangeSlug,
   type PriceBounds,
 } from "@/lib/filters";
 import { formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 /**
  * Slider harga dua gagang. Posisi gagang hanya draf; filter baru berlaku
@@ -52,6 +54,36 @@ export function PriceRangeFilter({
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Pilihan cepat harga">
+        {PRICE_PRESETS.map((preset) => {
+          const range = parsePriceRange(preset.slug);
+          // Lewati pilihan yang di luar rentang harga katalog saat ini
+          if (
+            (range?.min != null && range.min > bounds.max) ||
+            (range?.max != null && range.max < bounds.min)
+          ) {
+            return null;
+          }
+          const active = applied != null && priceRangeSlug(applied.min, applied.max) === preset.slug;
+          return (
+            <button
+              key={preset.slug}
+              type="button"
+              aria-pressed={active}
+              onClick={() => (active ? onClear() : onApply(preset.slug))}
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                active
+                  ? "border-primary bg-primary/8 text-primary"
+                  : "hover:border-foreground/40 hover:bg-muted",
+              )}
+            >
+              {preset.label}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="price-range relative h-6">
         <div className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-muted" />
         <div
