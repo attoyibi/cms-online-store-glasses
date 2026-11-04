@@ -176,6 +176,7 @@ export type FacetOption = {
   name: string;
   count: number;
   swatchHex?: string | null;
+  imageUrl?: string | null;
   hint?: string;
 };
 
@@ -215,6 +216,7 @@ export function buildFacets(
         name: attribute.name,
         count: counts.get(attribute.slug) ?? 0,
         swatchHex: attribute.swatch_hex,
+        imageUrl: attribute.image_url ?? null,
       }))
       // Sembunyikan opsi yang tidak dipakai produk mana pun, kecuali
       // sedang dipilih — supaya filter aktif tidak tiba-tiba hilang.

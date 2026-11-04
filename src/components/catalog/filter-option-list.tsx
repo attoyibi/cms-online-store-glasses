@@ -51,7 +51,16 @@ export function FilterOptionList({
                 onCheckedChange={() => onToggle(option.slug)}
               />
 
-              {option.swatchHex && (
+              {option.imageUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={option.imageUrl}
+                  alt=""
+                  className="size-5 shrink-0 rounded object-contain"
+                />
+              )}
+
+              {!option.imageUrl && option.swatchHex && (
                 <span
                   className="size-4 shrink-0 rounded-full border"
                   style={{ backgroundColor: option.swatchHex }}

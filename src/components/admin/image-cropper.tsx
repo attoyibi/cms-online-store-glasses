@@ -70,6 +70,8 @@ export function ImageCropper({
   aspect,
   outputWidth,
   title,
+  minSide = MIN_SOURCE_SIDE,
+  transparent = false,
   onConfirm,
   onCancel,
 }: {
@@ -79,6 +81,10 @@ export function ImageCropper({
   /** Lebar hasil akhir dalam piksel */
   outputWidth: number;
   title: string;
+  /** Sisi terpendek gambar sumber yang masih diterima */
+  minSide?: number;
+  /** Sisa ruang dibiarkan transparan (untuk ikon) alih-alih diisi putih */
+  transparent?: boolean;
   onConfirm: (result: File) => void | Promise<void>;
   onCancel: () => void;
 }) {
@@ -183,7 +189,7 @@ export function ImageCropper({
     setUserCenter(clampCenter(center.x + move[0], center.y + move[1], scale));
   }
 
-  const small = loaded ? Math.min(loaded.width, loaded.height) < MIN_SOURCE_SIDE : false;
+  const small = loaded ? Math.min(loaded.width, loaded.height) < minSide : false;
   const quality: Quality | null =
     loaded && frameW ? judgeQuality(frameW / scale, outputWidth) : null;
   const gap =
@@ -203,8 +209,10 @@ export function ImageCropper({
       canvas.height = outH;
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error("Browser tidak mendukung pengolahan gambar.");
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, outW, outH);
+      if (!transparent) {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, outW, outH);
+      }
       ctx.imageSmoothingQuality = "high";
       const left = frameW / 2 - center.x * scale;
       const top = frameH / 2 - center.y * scale;
@@ -267,7 +275,16 @@ export function ImageCropper({
               onPointerCancel={() => (drag.current = null)}
               onKeyDown={onKeyDown}
               onWheel={(event) => applyScale(scale * (event.deltaY < 0 ? 1.06 : 1 / 1.06))}
-              style={{ aspectRatio: aspect }}
+              style={{
+                aspectRatio: aspect,
+                ...(transparent
+                  ? {
+                      backgroundImage:
+                        "conic-gradient(#e5e5e5 25%, #fff 0 50%, #e5e5e5 0 75%, #fff 0)",
+                      backgroundSize: "16px 16px",
+                    }
+                  : {}),
+              }}
               className="relative w-full cursor-grab touch-none select-none overflow-hidden rounded-lg border bg-white outline-none active:cursor-grabbing focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -334,7 +351,7 @@ export function ImageCropper({
               {small && (
                 <li className="flex items-start gap-1.5 text-destructive">
                   <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-                  Gambar terlalu kecil (sisi terpendek di bawah {MIN_SOURCE_SIDE} px).
+                  Gambar terlalu kecil (sisi terpendek di bawah {minSide} px).
                   Pakai foto yang lebih besar.
                 </li>
               )}
@@ -358,7 +375,7 @@ export function ImageCropper({
               )}
               {gap && (
                 <li className="text-muted-foreground">
-                  Ada sisa ruang di bingkai; akan diisi warna putih.
+                  Ada sisa ruang di bingkai; akan {transparent ? "dibiarkan transparan" : "diisi warna putih"}.
                 </li>
               )}
             </ul>

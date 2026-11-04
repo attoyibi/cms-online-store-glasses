@@ -31,7 +31,13 @@ export function ImageUploader({
   altFallback,
   aspect = 1,
   outputWidth = 1200,
+  minSide,
+  transparent,
 }: {
+  /** Sisi terpendek gambar sumber yang diterima (bawaan 400 px) */
+  minSide?: number;
+  /** Sisa ruang transparan, bukan putih — untuk ikon kecil */
+  transparent?: boolean;
   name: string;
   /** Rasio bingkai hasil (lebar / tinggi), mis. 1 = persegi, 1200/630 = gambar bagikan */
   aspect?: number;
@@ -153,6 +159,8 @@ export function ImageUploader({
         file={queue[0] ?? null}
         aspect={aspect}
         outputWidth={outputWidth}
+        minSide={minSide}
+        transparent={transparent}
         title={cropTitle}
         onConfirm={uploadCropped}
         onCancel={() => setQueue((current) => current.slice(1))}
