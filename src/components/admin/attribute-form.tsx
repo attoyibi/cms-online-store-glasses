@@ -6,6 +6,7 @@ import Link from "next/link";
 import { AlertCircle, Loader2 } from "lucide-react";
 
 import { saveAttribute, type ActionState } from "@/app/admin/actions";
+import { ImageUploader } from "@/components/admin/image-uploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,9 +72,9 @@ export function AttributeForm({
         </select>
         {type === "bentuk" && (
           <p className="text-xs text-muted-foreground">
-            Ikon bentuk hanya tersedia untuk slug bawaan: bundar, kotak,
-            persegi-panjang, cat-eye, aviator, browline. Slug lain tetap bisa
-            difilter, hanya tampil tanpa ikon.
+            Ikon bawaan tersedia untuk slug: bundar, kotak, persegi-panjang,
+            cat-eye, aviator, browline. Bentuk lain bisa memakai ikon sendiri
+            lewat unggahan di bawah.
           </p>
         )}
       </div>
@@ -118,6 +119,25 @@ export function AttributeForm({
           </p>
         </div>
       )}
+
+      <div className="space-y-2">
+        <Label>{type === "bentuk" ? "Ikon bentuk (opsional)" : "Gambar (opsional)"}</Label>
+        <ImageUploader
+          key={type}
+          name="image_url"
+          single
+          transparent
+          minSide={100}
+          aspect={type === "bentuk" ? 2 : 1}
+          outputWidth={type === "bentuk" ? 480 : 240}
+          defaultValue={attribute?.image_url ? [attribute.image_url] : []}
+        />
+        <p className="text-xs text-muted-foreground">
+          {type === "bentuk"
+            ? "Tampil di filter bentuk frame (bingkai lebar 2:1). Pakai gambar siluet dengan latar polos atau transparan. Menggantikan ikon bawaan."
+            : "Tampil kecil di samping nama pada filter katalog, mis. gambar tekstur material."}
+        </p>
+      </div>
 
       <div className="max-w-32 space-y-2">
         <Label htmlFor="sort_order">Urutan</Label>

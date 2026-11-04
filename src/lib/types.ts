@@ -23,6 +23,8 @@ export type ProductAttribute = {
   name: string;
   /** Hanya untuk warna: kode hex bulatan warna di filter */
   swatch_hex: string | null;
+  /** Gambar/ikon unggahan admin; menggantikan ikon bawaan. Opsional: kolom baru. */
+  image_url?: string | null;
   sort_order: number;
   /**
    * Opsional karena query katalog sudah menyaring yang aktif saja —

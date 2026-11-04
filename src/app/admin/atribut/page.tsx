@@ -83,8 +83,15 @@ export default async function AdminAttributesPage() {
                     </span>
 
                     <span className="flex w-14 shrink-0 justify-center text-muted-foreground">
-                      {hasShapeIcon(attribute.slug) &&
-                      attribute.type === "bentuk" ? (
+                      {attribute.image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={attribute.image_url}
+                          alt=""
+                          className="h-5 w-11 object-contain"
+                        />
+                      ) : hasShapeIcon(attribute.slug) &&
+                        attribute.type === "bentuk" ? (
                         <ShapeIcon slug={attribute.slug} className="h-5 w-11" />
                       ) : attribute.swatch_hex ? (
                         <span

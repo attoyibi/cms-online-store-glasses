@@ -189,6 +189,10 @@ create table if not exists public.product_attributes (
   unique (type, slug)
 );
 
+-- Gambar/ikon unggahan admin (opsional); menggantikan ikon bentuk bawaan
+alter table public.product_attributes
+  add column if not exists image_url text;
+
 create index if not exists product_attributes_type_idx
   on public.product_attributes (type, sort_order);
 

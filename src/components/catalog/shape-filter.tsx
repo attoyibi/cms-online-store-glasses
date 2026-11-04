@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import { ShapeIcon, hasShapeIcon } from "@/components/catalog/shape-icon";
 import type { FacetOption } from "@/lib/filters";
 import { cn } from "@/lib/utils";
@@ -19,7 +21,9 @@ export function ShapeFilter({
   selected: string[];
   onToggle: (slug: string) => void;
 }) {
-  const drawable = options.filter((option) => hasShapeIcon(option.slug));
+  const drawable = options.filter(
+    (option) => option.imageUrl || hasShapeIcon(option.slug),
+  );
   if (drawable.length === 0) return null;
 
   return (
@@ -43,7 +47,18 @@ export function ShapeFilter({
               empty && "opacity-40 hover:border-border hover:text-muted-foreground",
             )}
           >
-            <ShapeIcon slug={option.slug} />
+            {option.imageUrl ? (
+              <Image
+                src={option.imageUrl}
+                alt=""
+                width={88}
+                height={44}
+                unoptimized
+                className="h-5 w-11 object-contain"
+              />
+            ) : (
+              <ShapeIcon slug={option.slug} />
+            )}
             <span className="whitespace-nowrap text-[11px] font-medium leading-none">
               {option.name}
               <span className="ml-1 font-normal tabular-nums opacity-60">

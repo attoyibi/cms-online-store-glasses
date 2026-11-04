@@ -602,6 +602,10 @@ export async function saveAttribute(
     slug,
     // Warna butuh kode hex untuk bulatan warnanya; jenis lain tidak
     swatch_hex: type === "warna" && swatch ? swatch : null,
+    // Hanya disertakan bila form mengirimnya, supaya tetap jalan sebelum kolom ada
+    ...(formData.has("image_url")
+      ? { image_url: String(formData.get("image_url") ?? "").trim() || null }
+      : {}),
     sort_order: toNumber(formData.get("sort_order")) ?? 0,
     is_active: formData.get("is_active") === "on",
   };

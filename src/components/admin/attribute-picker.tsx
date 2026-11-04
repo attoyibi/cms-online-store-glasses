@@ -86,7 +86,16 @@ export function AttributePicker({
                       className="size-4 rounded border-input accent-primary"
                     />
 
-                    {hasShapeIcon(option.slug) && group.type === "bentuk" && (
+                    {option.image_url && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={option.image_url}
+                        alt=""
+                        className="h-4 w-9 object-contain"
+                      />
+                    )}
+
+                    {!option.image_url && hasShapeIcon(option.slug) && group.type === "bentuk" && (
                       <ShapeIcon slug={option.slug} className="h-4 w-9" />
                     )}
 
