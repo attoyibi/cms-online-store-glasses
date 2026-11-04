@@ -135,6 +135,25 @@ export function CategoryForm({
         Tampilkan di situs
       </label>
 
+      {(!category || "show_on_home" in category) && (
+        <div className="space-y-1.5">
+          <input type="hidden" name="has_show_on_home" value="1" />
+          <label className="flex items-center gap-2.5 text-sm">
+            <input
+              type="checkbox"
+              name="show_on_home"
+              defaultChecked={category?.show_on_home ?? true}
+              className="size-4 rounded border-input accent-primary"
+            />
+            Tampilkan di kartu kategori halaman depan
+          </label>
+          <p className="pl-6.5 text-xs text-muted-foreground">
+            Matikan untuk menyembunyikannya dari halaman depan saja. Kategori
+            tetap ada di menu, filter, dan alamatnya sendiri.
+          </p>
+        </div>
+      )}
+
       <div className="flex gap-3 border-t pt-5">
         <SubmitButton label={category ? "Simpan Perubahan" : "Tambah Kategori"} />
         <Button asChild variant="ghost">
