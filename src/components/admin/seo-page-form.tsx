@@ -114,6 +114,7 @@ export function SeoPageForm({
               name="og_image"
               defaultValue={page?.og_image ? [page.og_image] : []}
               single
+              aspect={1200 / 630}
             />
             <p className="text-xs text-muted-foreground">
               Kosong = memakai gambar bagikan situs. PNG/JPG, ideal 1200×630.

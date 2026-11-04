@@ -6,6 +6,7 @@ import Link from "next/link";
 import { AlertCircle, Loader2 } from "lucide-react";
 
 import { saveCategory, type ActionState } from "@/app/admin/actions";
+import { ImageUploader } from "@/components/admin/image-uploader";
 import { SeoSnippetFields, type SeoContext } from "@/components/admin/seo-snippet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,27 +83,31 @@ export function CategoryForm({
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="image_url">URL gambar</Label>
-          <Input
-            id="image_url"
-            name="image_url"
-            defaultValue={category?.image_url ?? ""}
-            placeholder="/products/arka-square-matte-black-1.webp"
-          />
-        </div>
+      <div className="space-y-2">
+        <Label>Gambar kategori</Label>
+        <ImageUploader
+          name="image_url"
+          single
+          aspect={16 / 10}
+          outputWidth={1200}
+          defaultValue={category?.image_url ? [category.image_url] : []}
+        />
+        <p className="text-xs text-muted-foreground">
+          Tampil di kartu kategori pada halaman depan dengan bingkai melebar
+          (16:10). Atur posisinya di dialog setelah memilih gambar.
+        </p>
+      </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="sort_order">Urutan tampil</Label>
-          <Input
-            id="sort_order"
-            name="sort_order"
-            inputMode="numeric"
-            defaultValue={category?.sort_order ?? 0}
-            placeholder="0"
-          />
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="sort_order">Urutan tampil</Label>
+        <Input
+          id="sort_order"
+          name="sort_order"
+          inputMode="numeric"
+          defaultValue={category?.sort_order ?? 0}
+          placeholder="0"
+          className="max-w-32"
+        />
       </div>
 
       <fieldset className="space-y-4 border-t pt-5">

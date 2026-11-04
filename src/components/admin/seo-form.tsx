@@ -245,6 +245,7 @@ export function SeoForm({
               name="default_og_image"
               defaultValue={seo?.default_og_image ? [seo.default_og_image] : []}
               single
+              aspect={1200 / 630}
               onChange={(images) => setOgImage(images[0] ?? null)}
             />
             <Hint>PNG/JPG, ideal 1200×630. SVG tidak tampil di WhatsApp.</Hint>
@@ -255,6 +256,7 @@ export function SeoForm({
               name="logo_url"
               defaultValue={seo?.logo_url ? [seo.logo_url] : []}
               single
+              outputWidth={600}
             />
             <Hint>Persegi, PNG/JPG. Dipakai di data bisnis untuk Google.</Hint>
           </div>
