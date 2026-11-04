@@ -144,6 +144,11 @@ alter table public.categories
   add column if not exists seo_description text
     check (seo_description is null or char_length(seo_description) <= 200);
 
+-- Kategori boleh disembunyikan dari kartu kategori di halaman depan tanpa
+-- menonaktifkannya (tetap ada di menu, filter, dan alamatnya sendiri).
+alter table public.categories
+  add column if not exists show_on_home boolean not null default true;
+
 -- Teks alternatif foto (v9): peta { "url foto": "teks" }. Foto tanpa teks
 -- memakai nama produk. Peta, bukan daftar paralel, supaya mengurutkan ulang
 -- foto tidak menggeser teksnya.

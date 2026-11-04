@@ -20,7 +20,13 @@ const NONE: BlockData = { products: [], categories: [] };
 async function loadData(block: Block): Promise<BlockData> {
   switch (block.type) {
     case "category-grid":
-      return { products: [], categories: await getCategories() };
+      return {
+        products: [],
+        // Kategori yang dimatikan "tampil di beranda" tidak dibuatkan kartu
+        categories: (await getCategories()).filter(
+          (category) => category.show_on_home !== false,
+        ),
+      };
 
     case "product-showcase": {
       const { source, categorySlug, limit } = block.props;

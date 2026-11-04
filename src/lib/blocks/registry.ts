@@ -129,7 +129,8 @@ export const BLOCK_DEFS: { [K in BlockType]: BlockDefinition<K> } = {
 
   "category-grid": {
     label: "Daftar kategori",
-    description: "Kartu kategori. Isinya otomatis dari menu Kategori; di sini hanya judulnya.",
+    description:
+      "Kartu kategori. Isinya otomatis dari menu Kategori; di sini hanya judulnya. Untuk menyembunyikan satu kategori dari sini, matikan \"Tampilkan di kartu kategori halaman depan\" di menu Kategori.",
     fields: [
       eyebrow,
       { kind: "text", name: "title", label: "Judul", max: 120 },
