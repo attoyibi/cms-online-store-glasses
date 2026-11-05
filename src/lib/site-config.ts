@@ -12,8 +12,9 @@ export const siteConfig = {
   whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "6289679165530",
   city: "Madiun",
   address: "Madiun, Jawa Timur",
-  email: "halo@lensara.id",
-  instagram: "https://instagram.com/",
+  // Kosong sampai pemilik mengisinya di Admin → Pengaturan (jangan pakai contoh palsu)
+  email: "",
+  instagram: "",
   openHours: "Setiap hari, 09.00 – 21.00 WIB",
 } as const;
 

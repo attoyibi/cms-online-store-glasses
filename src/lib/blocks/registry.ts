@@ -62,15 +62,14 @@ export const BLOCK_DEFS: { [K in BlockType]: BlockDefinition<K> } = {
       titleLine1: "Kacamata yang pas,",
       titleHighlight: "tanpa harus menebak.",
       description:
-        "Ratusan frame, sunglasses, dan lensa pilihan dengan harga yang transparan. Ceritakan kebutuhan mata Anda lewat WhatsApp, kami bantu carikan yang cocok — lalu kami kirim ke seluruh Indonesia.",
+        "Frame, sunglasses, dan lensa pilihan dengan harga yang transparan. Ceritakan kebutuhan mata Anda lewat WhatsApp, kami bantu carikan yang cocok — lalu kami kirim ke seluruh Indonesia.",
       primaryLabel: "Lihat Koleksi",
       primaryHref: "/produk",
       whatsappLabel: "Konsultasi WhatsApp",
       whatsappMessage: "Halo {store}, saya mau konsultasi soal kacamata.",
       stats: [
-        { value: "2", label: "Toko di {kota}" },
-        { value: "500+", label: "Model frame & lensa" },
-        { value: "34", label: "Provinsi terjangkau" },
+        { value: "Gratis", label: "Konsultasi sebelum beli" },
+        { value: "{kota}", label: "Toko kami" },
       ],
       imageA: "/products/brio-browline-jade-1.webp",
       imageAAlt: "Frame browline warna jade",
@@ -105,8 +104,8 @@ export const BLOCK_DEFS: { [K in BlockType]: BlockDefinition<K> } = {
       items: [
         {
           icon: "store",
-          title: "Toko fisik di {kota}",
-          body: "Bisa datang langsung untuk coba frame dan cek mata.",
+          title: "Dari {kota}",
+          body: "Pesan lewat WhatsApp, kami bantu pilihkan frame dan lensa yang cocok.",
         },
         {
           icon: "package-check",
@@ -222,12 +221,12 @@ export const BLOCK_DEFS: { [K in BlockType]: BlockDefinition<K> } = {
     ],
     defaults: {
       eyebrow: "Tentang Kami",
-      title: "Optik kecil dari {kota} yang tidak suka menjual barang asal-asalan",
-      body: "Kami mulai dari satu gerai kecil di {kota}. Sampai sekarang prinsipnya tidak berubah: setiap frame dicoba dulu sebelum masuk katalog, dan setiap pertanyaan dijawab apa adanya — termasuk kalau jawabannya adalah “model ini kurang cocok untuk wajah Anda”.",
+      title: "Toko kacamata dari {kota} yang tidak suka menjual barang asal-asalan",
+      body: "Kami berangkat dari {kota} dengan satu prinsip: setiap frame dicoba dulu sebelum masuk katalog, dan setiap pertanyaan dijawab apa adanya — termasuk kalau jawabannya adalah “model ini kurang cocok untuk wajah Anda”.",
       points: [
         "Frame diseleksi langsung, bukan dropship",
         "Resep lensa bisa dikirim dari hasil periksa optik mana pun",
-        "Pemasangan lensa dikerjakan di lab sendiri",
+        "Pemasangan lensa disesuaikan dengan resep Anda",
       ],
       image: "/products/sena-round-sand-1.webp",
       imageAlt: "Frame bundar warna pasir",
@@ -368,23 +367,8 @@ export const BLOCK_DEFS: { [K in BlockType]: BlockDefinition<K> } = {
     defaults: {
       eyebrow: "Testimoni",
       title: "Yang dikatakan pelanggan",
-      reviews: [
-        {
-          name: "Rani P.",
-          city: "Bantul",
-          body: "Awalnya ragu beli kacamata online. Ternyata dibantu sampai detail — dikasih tahu frame yang saya incar terlalu lebar untuk wajah saya, lalu direkomendasikan yang lain. Pas banget.",
-        },
-        {
-          name: "Bagas W.",
-          city: "Surabaya",
-          body: "Pesan Jumat sore, Senin sudah sampai. Lensa progresifnya nyaman, dan sempat ditanya ulang soal ukuran karena ada angka yang aneh di resep saya. Teliti.",
-        },
-        {
-          name: "Siti H.",
-          city: "Makassar",
-          body: "Harga di website sama dengan yang dikonfirmasi di WhatsApp, tidak ada biaya tambahan mendadak. Kemasannya juga rapi, dapat hard case dan lap.",
-        },
-      ],
+      // Kosong sengaja: ulasan harus asli. Isi lewat editor setelah ada pelanggan.
+      reviews: [],
     },
   },
 
@@ -420,11 +404,11 @@ export const BLOCK_DEFS: { [K in BlockType]: BlockDefinition<K> } = {
       items: [
         {
           q: "Apakah bisa bayar lewat website ini?",
-          a: "Tidak. Website ini hanya untuk memilih produk. Setelah menekan Lanjut Pesan, rincian pesanan dikirim ke WhatsApp kami, lalu pembayaran diatur di sana — transfer bank, e-wallet, atau bayar di toko.",
+          a: "Tidak. Website ini hanya untuk memilih produk. Setelah menekan Lanjut Pesan, rincian pesanan dikirim ke WhatsApp kami, lalu pembayaran diatur di sana — transfer bank atau e-wallet.",
         },
         {
           q: "Saya tidak punya hasil periksa mata, bagaimana?",
-          a: "Bisa datang ke toko kami di {kota} untuk periksa gratis. Kalau di luar kota, Anda bisa periksa di optik terdekat lalu kirimkan fotonya ke WhatsApp kami — kami hanya butuh angka SPH, CYL, AXIS, dan PD.",
+          a: "Periksa dulu di optik atau klinik mata terdekat, lalu kirimkan fotonya ke WhatsApp kami — kami hanya butuh angka SPH, CYL, AXIS, dan PD.",
         },
         {
           q: "Berapa lama pesanan sampai?",
