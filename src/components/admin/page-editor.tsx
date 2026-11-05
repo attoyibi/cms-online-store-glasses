@@ -26,7 +26,7 @@ import { toast } from "sonner";
 
 import type { EditorResult } from "@/app/admin/halaman-depan/actions";
 import { BlockOutline } from "@/components/admin/block-outline";
-import { FieldInput } from "@/components/admin/block-fields";
+import { CategoryOptionsContext, FieldInput } from "@/components/admin/block-fields";
 import { PreviewPane } from "@/components/admin/preview-pane";
 import { Button } from "@/components/ui/button";
 import {
@@ -99,6 +99,7 @@ export function PageEditor({
   actions,
   previewHref,
   livePreviewSrc = "/pratinjau/langsung",
+  categories = [],
 }: {
   initialBlocks: Block[];
   source: PageSource;
@@ -111,6 +112,8 @@ export function PageEditor({
   previewHref: string;
   /** Halaman yang dimuat di iframe pratinjau langsung */
   livePreviewSrc?: string;
+  /** Kategori toko, untuk blok daftar kategori */
+  categories?: { slug: string; name: string }[];
 }) {
   const [history, dispatch] = useReducer(historyReducer, initialBlocks, createHistory);
   const blocks = history.present;
@@ -601,15 +604,17 @@ export function PageEditor({
                 </Button>
               </div>
 
-              {definition.fields.map((field) => (
-                <FieldInput
-                  key={field.name}
-                  field={field}
-                  idPrefix={selected.id}
-                  value={(selected.props as Record<string, unknown>)[field.name]}
-                  onChange={(value) => setProp(selected.id, field.name, value)}
-                />
-              ))}
+              <CategoryOptionsContext.Provider value={categories}>
+                {definition.fields.map((field) => (
+                  <FieldInput
+                    key={field.name}
+                    field={field}
+                    idPrefix={selected.id}
+                    value={(selected.props as Record<string, unknown>)[field.name]}
+                    onChange={(value) => setProp(selected.id, field.name, value)}
+                  />
+                ))}
+              </CategoryOptionsContext.Provider>
             </div>
           ) : (
             <div className="flex min-h-56 flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-6 text-center">

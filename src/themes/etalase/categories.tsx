@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { withDefaults } from "@/lib/blocks/registry";
+import { arrangeCategories } from "@/lib/blocks/select-categories";
 import type { CategoryGridProps } from "@/lib/blocks/types";
 import type { Category } from "@/lib/types";
 
@@ -10,10 +11,11 @@ import type { Category } from "@/lib/types";
  * keterangan singkat, dan tombol "Lihat Produk". Seluruh kartu bisa diklik.
  */
 export function EtalaseCategories({
-  categories,
+  categories: allCategories,
   ...rest
 }: { categories: Category[] } & Partial<CategoryGridProps>) {
   const p = withDefaults("category-grid", rest);
+  const categories = arrangeCategories(allCategories, p.categoryOrder);
   if (categories.length === 0) return null;
 
   return (

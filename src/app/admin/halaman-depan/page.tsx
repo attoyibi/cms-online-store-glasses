@@ -8,11 +8,15 @@ import {
 } from "@/app/admin/halaman-depan/actions";
 import { PageEditor } from "@/components/admin/page-editor";
 import { loadHomeEditorState } from "@/lib/data/admin-queries";
+import { getCategories } from "@/lib/data/queries";
 
 export const metadata: Metadata = { title: "Halaman Depan" };
 
 export default async function HomePageEditorPage() {
-  const state = await loadHomeEditorState();
+  const [state, categories] = await Promise.all([
+    loadHomeEditorState(),
+    getCategories(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -41,6 +45,7 @@ export default async function HomePageEditorPage() {
         schemaReady={state.schemaReady}
         previewHref="/pratinjau"
         layout={state.layout}
+        categories={categories.map(({ slug, name }) => ({ slug, name }))}
         actions={{
           save: saveHomeDraft.bind(null, state.layout),
           publish: publishHome.bind(null, state.layout),

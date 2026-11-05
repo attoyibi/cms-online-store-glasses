@@ -508,10 +508,6 @@ function categoryPayload(formData: FormData) {
     image_url: String(formData.get("image_url") ?? "").trim() || null,
     sort_order: toNumber(formData.get("sort_order")) ?? 0,
     is_active: formData.get("is_active") === "on",
-    // Kolom baru: hanya dikirim bila formulirnya memuat kotaknya
-    ...(formData.has("has_show_on_home")
-      ? { show_on_home: formData.get("show_on_home") === "on" }
-      : {}),
   };
 }
 

@@ -24,6 +24,8 @@ export type Field = FieldBase &
     | { kind: "select"; options: readonly SelectOption[] }
     | { kind: "number"; min: number; max: number }
     | { kind: "icon" }
+    /** Urutan dan tampil/sembunyi kategori (slug, awalan "!" = sembunyi) */
+    | { kind: "category-order" }
     /** Daftar teks pendek, mis. butir-butir keunggulan */
     | { kind: "strings"; max: number; itemLabel: string }
     /** Daftar objek berulang; `blank` = isi untuk item yang baru ditambah */

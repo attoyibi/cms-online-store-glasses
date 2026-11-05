@@ -4,15 +4,17 @@ import { ArrowUpRight } from "lucide-react";
 
 import { SectionHeading } from "@/components/sections/section-heading";
 import { withDefaults } from "@/lib/blocks/registry";
+import { arrangeCategories } from "@/lib/blocks/select-categories";
 import type { CategoryGridProps } from "@/lib/blocks/types";
 import type { Category } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export function CategoryGrid({
-  categories,
+  categories: allCategories,
   ...rest
 }: { categories: Category[] } & Partial<CategoryGridProps>) {
   const p = withDefaults("category-grid", rest);
+  const categories = arrangeCategories(allCategories, p.categoryOrder);
   if (categories.length === 0) return null;
 
   return (
