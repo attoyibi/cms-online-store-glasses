@@ -37,6 +37,8 @@ export type CategoryGridProps = {
   description: string;
   actionLabel: string;
   actionHref: string;
+  /** Urutan kartu; slug berawalan "!" disembunyikan. Kosong = semua, urutan menu Kategori */
+  categoryOrder: string[];
 };
 
 export type ShowcaseSource = "unggulan" | "terbaru" | "kategori";

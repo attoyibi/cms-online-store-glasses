@@ -6,8 +6,6 @@ export type Category = {
   image_url: string | null;
   sort_order: number;
   is_active: boolean;
-  /** Tampil di kartu kategori halaman depan; tidak ada pada data contoh (dianggap ya) */
-  show_on_home?: boolean;
   /** Judul untuk Google; kosong = nama kategori. Tidak ada pada data contoh. */
   seo_title?: string | null;
   seo_description?: string | null;

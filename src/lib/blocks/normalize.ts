@@ -110,6 +110,16 @@ function sanitizeField(field: Field, raw: unknown, fallback: unknown): unknown {
         ? raw
         : (fallback ?? "star");
 
+    case "category-order": {
+      if (!Array.isArray(raw)) return fallback;
+      return raw
+        .filter(
+          (item): item is string =>
+            typeof item === "string" && /^!?[a-z0-9][a-z0-9-]{0,79}$/.test(item),
+        )
+        .slice(0, 100);
+    }
+
     case "strings": {
       if (!Array.isArray(raw)) return fallback;
       return raw

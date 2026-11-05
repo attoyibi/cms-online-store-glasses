@@ -83,11 +83,6 @@ export default async function AdminCategoriesPage() {
                     Nonaktif
                   </span>
                 )}
-                {category.is_active && category.show_on_home === false && (
-                  <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-                    Tidak di beranda
-                  </span>
-                )}
                 <Link
                   href={`/admin/kategori/${category.id}`}
                   className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"

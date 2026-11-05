@@ -129,13 +129,19 @@ export const BLOCK_DEFS: { [K in BlockType]: BlockDefinition<K> } = {
   "category-grid": {
     label: "Daftar kategori",
     description:
-      "Kartu kategori. Isinya otomatis dari menu Kategori; di sini hanya judulnya. Untuk menyembunyikan satu kategori dari sini, matikan \"Tampilkan di kartu kategori halaman depan\" di menu Kategori.",
+      "Kartu kategori. Kategori diambil dari menu Kategori; di sini Anda mengatur mana yang tampil dan urutannya.",
     fields: [
       eyebrow,
       { kind: "text", name: "title", label: "Judul", max: 120 },
       { kind: "textarea", name: "description", label: "Deskripsi", max: 300, rows: 2 },
       { kind: "text", name: "actionLabel", label: "Tautan kanan — teks", max: 40, help: "Kosongkan untuk menyembunyikan." },
       { kind: "link", name: "actionHref", label: "Tautan kanan — tujuan" },
+      {
+        kind: "category-order",
+        name: "categoryOrder",
+        label: "Kategori yang tampil",
+        help: "Hilangkan centang untuk menyembunyikan dari beranda saja; kategori tetap ada di menu dan filter. Kategori baru otomatis tampil di urutan terakhir.",
+      },
     ],
     defaults: {
       eyebrow: "Kategori",
@@ -144,6 +150,7 @@ export const BLOCK_DEFS: { [K in BlockType]: BlockDefinition<K> } = {
         "Pilih dulu jenisnya, nanti kami bantu persempit ke bentuk dan ukuran yang paling pas.",
       actionLabel: "Semua produk",
       actionHref: "/produk",
+      categoryOrder: [],
     },
   },
 

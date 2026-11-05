@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 
 import { ImageUploader } from "@/components/admin/image-uploader";
@@ -9,6 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ICON_LABELS, ICON_NAMES } from "@/lib/blocks/icon-names";
 import type { Field } from "@/lib/blocks/schema";
+import {
+  buildCategoryRows,
+  serializeCategoryRows,
+} from "@/lib/blocks/select-categories";
 import { cn } from "@/lib/utils";
 
 const textareaClass =
@@ -16,6 +20,11 @@ const textareaClass =
 
 const selectClass =
   "h-9 w-full rounded-lg border bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50";
+
+/** Daftar kategori toko, untuk kolom pengatur urutan kategori di editor */
+export const CategoryOptionsContext = createContext<
+  { slug: string; name: string }[]
+>([]);
 
 /** Pindahkan satu elemen daftar ke atas (-1) atau bawah (+1) */
 function move<T>(list: T[], index: number, direction: -1 | 1): T[] {
@@ -177,6 +186,14 @@ function FieldControl({
         />
       );
 
+    case "category-order":
+      return (
+        <CategoryOrderControl
+          value={Array.isArray(value) ? (value as string[]) : []}
+          onChange={onChange}
+        />
+      );
+
     case "icon":
       return (
         <select
@@ -304,6 +321,77 @@ function FieldControl({
       );
     }
   }
+}
+
+function CategoryOrderControl({
+  value,
+  onChange,
+}: {
+  value: string[];
+  onChange: (value: unknown) => void;
+}) {
+  const categories = useContext(CategoryOptionsContext);
+  const rows = buildCategoryRows(categories, value);
+
+  if (rows.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Belum ada kategori. Tambahkan dulu di menu Kategori.
+      </p>
+    );
+  }
+
+  const update = (next: typeof rows) => onChange(serializeCategoryRows(next));
+  const arrow =
+    "flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30";
+
+  return (
+    <ul className="divide-y rounded-xl border">
+      {rows.map((row, index) => (
+        <li key={row.slug} className="flex items-center gap-2 px-3 py-1.5">
+          <label className="flex min-w-0 flex-1 items-center gap-2.5 text-sm">
+            <input
+              type="checkbox"
+              checked={row.visible}
+              onChange={(event) =>
+                update(
+                  rows.map((item) =>
+                    item.slug === row.slug
+                      ? { ...item, visible: event.target.checked }
+                      : item,
+                  ),
+                )
+              }
+              className="size-4 rounded border-input accent-primary"
+            />
+            <span
+              className={cn("truncate", !row.visible && "text-muted-foreground line-through")}
+            >
+              {row.name}
+            </span>
+          </label>
+          <button
+            type="button"
+            disabled={index === 0}
+            onClick={() => update(move(rows, index, -1))}
+            aria-label={`Naikkan ${row.name}`}
+            className={arrow}
+          >
+            <ArrowUp className="size-3.5" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            disabled={index === rows.length - 1}
+            onClick={() => update(move(rows, index, 1))}
+            aria-label={`Turunkan ${row.name}`}
+            className={arrow}
+          >
+            <ArrowDown className="size-3.5" aria-hidden="true" />
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 function RowButtons({
